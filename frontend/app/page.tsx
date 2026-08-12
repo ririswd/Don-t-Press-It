@@ -94,6 +94,7 @@ export default function Home() {
               <input className={styles.codeInput} value={roomInput} onChange={(event) => setRoomInput(event.target.value)} placeholder="ROOM ID" inputMode="numeric" />
               <button className={`${styles.actionButton} ${styles.tanButton}`} onClick={joinRoom}>JOIN OPERATION</button>
             </div>
+            {game.error && <Notice text={game.error} danger />}
             <p className={styles.encryption}>🔒 Each choice is encrypted onchain until everyone commits.</p>
           </div>
           <aside className={styles.commsPanel}>
