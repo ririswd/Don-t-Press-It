@@ -18,7 +18,7 @@ const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "";
 
 const config = projectId
   ? getDefaultConfig({
-      appName: "inco confidential lottery",
+      appName: "Don't Press It",
       projectId,
       chains: [activeChain],
       transports: {
