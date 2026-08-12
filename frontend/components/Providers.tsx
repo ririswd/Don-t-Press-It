@@ -10,7 +10,7 @@ import {
   lightTheme,
 } from "@rainbow-me/rainbowkit";
 import { ThemeProvider, useTheme } from "next-themes";
-import { activeChain } from "@/lib/network";
+import { activeChain, activeRpcUrl } from "@/lib/network";
 
 const queryClient = new QueryClient();
 
@@ -21,12 +21,15 @@ const config = projectId
       appName: "inco confidential lottery",
       projectId,
       chains: [activeChain],
+      transports: {
+        [activeChain.id]: http(activeRpcUrl),
+      },
       ssr: true,
     })
   : createConfig({
       chains: [activeChain],
       transports: {
-        [activeChain.id]: http(),
+        [activeChain.id]: http(activeRpcUrl),
       },
       ssr: true,
     });

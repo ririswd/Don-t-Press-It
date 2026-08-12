@@ -17,6 +17,12 @@ export const NETWORK: "mainnet" | "testnet" =
 // widening to `Chain` keeps `transports: { [activeChain.id]: http() }` a valid index-signature record.
 export const activeChain: Chain = NETWORK === "mainnet" ? base : baseSepolia;
 
+// Base's shared endpoint occasionally returns 502s. Keep wallet reads on a
+// reliable public RPC so rooms remain visible after a transaction confirms.
+export const activeRpcUrl = NETWORK === "mainnet"
+  ? "https://mainnet.base.org"
+  : "https://base-sepolia-rpc.publicnode.com";
+
 /**
  * Returns the Inco Lightning instance for the active network.
  * @inco/lightning-js exposes factories for both Base Sepolia and Base Mainnet.
