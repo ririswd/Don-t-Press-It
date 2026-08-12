@@ -1,0 +1,699 @@
+:root {
+  color: #d2ceba;
+  background: #030403;
+  font-family: 'Oswald', Impact, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --void: #030403;
+  --black-metal: #0a0c0a;
+  --gunmetal: #151813;
+  --raised-metal: #24261f;
+  --olive-dark: #303720;
+  --olive: #596334;
+  --olive-bright: #87964c;
+  --khaki: #b6aa82;
+  --bone: #d2ceba;
+  --amber: #c48f16;
+  --signal-amber: #ffba16;
+  --danger: #a82a24;
+  --danger-hot: #ed382b;
+  --crt-green: #8fbc5c;
+  --muted: #686958;
+  --stage-w: min(100vw, 177.78vh);
+  --stage-h: min(100vh, 56.25vw);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-width: 320px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 15% 45%, #28271a 0, transparent 27%),
+    radial-gradient(circle at 83% 55%, #1a2316 0, transparent 24%),
+    #030403;
+}
+
+button,
+input,
+textarea,
+select {
+  color: inherit;
+  font: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 0.18cqw solid var(--signal-amber);
+  outline-offset: 0.18cqw;
+}
+
+.app-shell {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.ambient {
+  position: absolute;
+  width: 24vmax;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.14;
+  pointer-events: none;
+}
+
+.ambient-one { left: -10vmax; top: 5%; background: #90813f; }
+.ambient-two { right: -10vmax; bottom: 4%; background: #596334; }
+
+.game-stage {
+  position: relative;
+  width: var(--stage-w);
+  height: var(--stage-h);
+  aspect-ratio: 16 / 9;
+  container-name: game-stage;
+  container-type: size;
+  overflow: hidden;
+  isolation: isolate;
+  background: #090b09;
+  box-shadow: 0 0 3rem #000, 0 0 9rem rgba(82, 83, 52, 0.14);
+}
+
+.stage-surface,
+.stage-rim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 70;
+}
+
+.stage-surface {
+  opacity: 0.24;
+  mix-blend-mode: overlay;
+  background-image:
+    url('/textures/grain.svg'),
+    linear-gradient(rgba(255,255,255,.022) 50%, transparent 50%),
+    repeating-linear-gradient(105deg, transparent 0 6%, rgba(213,197,148,.035) 6.1% 6.2%, transparent 6.3% 17%),
+    radial-gradient(circle at 30% 20%, rgba(255,255,255,.12) 0 0.04%, transparent .08%),
+    radial-gradient(circle at 73% 61%, rgba(255,255,255,.08) 0 0.04%, transparent .09%);
+  background-size: 17cqw 17cqw, 100% 0.28cqh, 100% 100%, 13cqw 13cqw, 9cqw 9cqw;
+}
+
+.stage-rim {
+  border: 0.55cqw solid #090a08;
+  box-shadow:
+    inset 0 0 0 .12cqw #3b3d31,
+    inset 0 0 0 .42cqw #171914,
+    inset 0 0 4cqw 1.2cqw #000;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(72, 78, 46, 0.2), transparent 40%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.01) 0 1px, transparent 1px 4px),
+    linear-gradient(145deg, #15170f, #080a08 55%, #11130d);
+}
+
+.screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .42;
+  background:
+    linear-gradient(90deg, transparent 49.9%, rgba(174,167,118,.07) 50%, transparent 50.1%),
+    linear-gradient(0deg, transparent 49.9%, rgba(174,167,118,.05) 50%, transparent 50.1%);
+  background-size: 9cqw 9cqh;
+}
+
+.panel {
+  position: relative;
+  border: .16cqw solid #5d5c49;
+  color: var(--bone);
+  background:
+    linear-gradient(120deg, rgba(255,255,255,.06), transparent 11% 88%, rgba(0,0,0,.4)),
+    linear-gradient(175deg, #1e211b, #0a0c0a 70%);
+  box-shadow:
+    inset 0 0 0 .14cqw #080908,
+    inset 0 0 0 .27cqw rgba(120,116,87,.28),
+    inset 0 0 1.4cqw #000,
+    0 .55cqh 1.2cqh rgba(0,0,0,.7);
+  clip-path: polygon(1.5% 0, 98.5% 0, 100% 5%, 100% 95%, 98.5% 100%, 1.5% 100%, 0 95%, 0 5%);
+}
+
+.panel::after {
+  content: '';
+  position: absolute;
+  inset: .35cqw;
+  pointer-events: none;
+  border: .07cqw solid rgba(222,211,164,.15);
+  clip-path: inherit;
+}
+
+.panel::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+  opacity: .1;
+  mix-blend-mode: overlay;
+  background: url('/textures/grain.svg') center / 15cqw 15cqw repeat;
+}
+
+.panel > * { position: relative; z-index: 1; }
+
+.panel-olive {
+  border-color: #777754;
+  background:
+    linear-gradient(120deg, rgba(255,255,255,.08), transparent 14% 88%, rgba(0,0,0,.3)),
+    linear-gradient(160deg, #454a2c, #1b2015 75%);
+}
+
+.panel-amber {
+  color: #17150c;
+  border-color: #9a7624;
+  background: linear-gradient(170deg, #c29a3e, #7a5613);
+}
+
+.panel-bone {
+  color: #14140e;
+  border-color: #b6aa82;
+  background: linear-gradient(170deg, #c7bc96, #867c5d);
+}
+
+.panel-red {
+  border-color: #84231d;
+  background: linear-gradient(170deg, #532019, #160b09);
+}
+
+.rivets {
+  position: absolute;
+  inset: .58cqw;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.rivets i {
+  position: absolute;
+  width: .62cqw;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: .06cqw solid #050605;
+  background:
+    linear-gradient(45deg, transparent 44%, #050505 45% 55%, transparent 56%),
+    radial-gradient(circle at 35% 30%, #aaa588, #34362d 32%, #080908 72%);
+  box-shadow: 0 .08cqh .15cqh #000;
+}
+
+.rivets i:nth-child(1) { top: 0; left: 0; }
+.rivets i:nth-child(2) { top: 0; right: 0; }
+.rivets i:nth-child(3) { bottom: 0; left: 0; }
+.rivets i:nth-child(4) { bottom: 0; right: 0; }
+
+.plate-button {
+  position: relative;
+  display: grid;
+  grid-template-columns: .5fr 6fr .5fr;
+  align-items: center;
+  width: 100%;
+  min-height: 8.2cqh;
+  padding: .7cqh 2cqw;
+  border: .17cqw solid #77755b;
+  cursor: pointer;
+  font-family: 'Black Ops One', Impact, sans-serif;
+  font-size: 2.2cqw;
+  letter-spacing: .035em;
+  line-height: 1;
+  text-transform: uppercase;
+  clip-path: polygon(2.4% 0, 97.6% 0, 100% 18%, 100% 82%, 97.6% 100%, 2.4% 100%, 0 82%, 0 18%);
+  box-shadow:
+    inset 0 0 0 .18cqw rgba(0,0,0,.82),
+    inset 0 .22cqh .25cqh rgba(255,255,255,.15),
+    inset 0 -.5cqh 1.2cqh rgba(0,0,0,.42),
+    0 .45cqh .6cqh #000;
+  transition: transform .12s ease, filter .12s ease, box-shadow .12s ease;
+}
+
+.plate-button::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: .7cqh;
+  opacity: .28;
+  background: repeating-linear-gradient(-45deg, #111 0 .6cqw, transparent .6cqw 1.15cqw);
+}
+
+.plate-button:hover:not(:disabled) {
+  filter: brightness(1.14) saturate(1.05);
+  transform: translateY(-.18cqh);
+}
+
+.plate-button:active:not(:disabled) {
+  transform: translateY(.25cqh);
+  box-shadow: inset 0 .4cqh 1.2cqh #000;
+}
+
+.plate-button:disabled {
+  cursor: not-allowed;
+  filter: grayscale(.55) brightness(.55);
+}
+
+.plate-olive { color: #e2dfcf; background: linear-gradient(175deg, #687443, #30391f 65%, #202615); }
+.plate-amber { color: #15130b; border-color: #ad8527; background: linear-gradient(175deg, #e1b626, #a4740d 70%, #6b4908); }
+.plate-bone { color: #16150f; background: linear-gradient(175deg, #c5ba93, #928563 72%, #685e43); }
+.plate-red { color: #e6b0a5; border-color: #bd342a; background: linear-gradient(175deg, #5b1916, #220a08 72%); box-shadow: inset 0 0 0 .18cqw #130302, inset 0 0 1.4cqw rgba(217,44,31,.35), 0 .45cqh .6cqh #000; }
+.plate-dark { color: #77786a; border-color: #45473e; background: linear-gradient(175deg, #23251f, #0c0d0b 72%); }
+.button-label { text-align: center; text-shadow: 0 .14cqh .12cqh rgba(0,0,0,.65); }
+.button-chevron { font-family: 'Oswald', sans-serif; font-weight: 700; opacity: .65; }
+
+.brand-mark {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0 .5cqw;
+  color: #c9c5b3;
+  font-family: 'Black Ops One', Impact, sans-serif;
+  font-size: 7.8cqw;
+  letter-spacing: .015em;
+  line-height: .92;
+  text-shadow: 0 .4cqh .15cqh #000;
+}
+
+.brand-mark .brand-press { color: #b28745; }
+.brand-mark .brand-it { color: #a9221d; }
+.brand-mark.compact { flex-wrap: nowrap; gap: .16cqw; font-size: 2.25cqw; }
+
+.wing-star {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .42cqw;
+  color: #85866c;
+}
+
+.wing-star i { width: 2.7cqw; height: .35cqh; background: currentColor; box-shadow: 0 .75cqh currentColor; opacity: .7; }
+.wing-star i:nth-of-type(2), .wing-star i:nth-of-type(3) { width: 1.5cqw; }
+.wing-star span { font-size: 1.7cqw; }
+
+.warning-icon {
+  position: relative;
+  display: inline-grid;
+  width: 4.2cqw;
+  aspect-ratio: 1.12;
+  place-items: center;
+  color: currentColor;
+  font-weight: 700;
+  font-size: 2.2cqw;
+  line-height: 1;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  background: currentColor;
+}
+
+.warning-icon::after {
+  content: '';
+  position: absolute;
+  inset: .34cqw;
+  clip-path: inherit;
+  background: #11130f;
+}
+
+.warning-icon span { position: relative; z-index: 1; margin-top: .85cqh; }
+
+.shield-icon {
+  display: inline-grid;
+  width: 5.3cqw;
+  height: 6.3cqh;
+  place-items: center;
+  border: .35cqw solid currentColor;
+  color: inherit;
+  font-size: 2.4cqw;
+  clip-path: polygon(50% 0, 96% 17%, 86% 74%, 50% 100%, 14% 74%, 4% 17%);
+}
+
+.status-led {
+  display: inline-block;
+  width: .68cqw;
+  aspect-ratio: 1;
+  flex: 0 0 auto;
+  border: .08cqw solid #171914;
+  border-radius: 50%;
+  background: #4b5132;
+  box-shadow: inset 0 0 .15cqw #000;
+}
+
+.status-led.green { background: #91c64b; box-shadow: 0 0 .45cqw #7ab631, inset 0 0 .1cqw #eaff9b; }
+.status-led.amber { background: var(--signal-amber); box-shadow: 0 0 .45cqw #e99b0b, inset 0 0 .1cqw #fff0a7; animation: led-pulse 1.1s infinite; }
+.status-led.red { background: var(--danger-hot); box-shadow: 0 0 .45cqw #e53627; }
+.status-led.olive { background: #727c3e; }
+
+@keyframes led-pulse { 50% { opacity: .45; } }
+
+.signal-bars { display: flex; align-items: end; gap: .12cqw; height: 2.1cqh; }
+.signal-bars i { width: .32cqw; background: var(--crt-green); box-shadow: 0 0 .3cqw rgba(143,188,92,.5); }
+.signal-bars i:nth-child(1) { height: 30%; }
+.signal-bars i:nth-child(2) { height: 48%; }
+.signal-bars i:nth-child(3) { height: 72%; }
+.signal-bars i:nth-child(4) { height: 100%; }
+.signal-bars.big { height: 3.5cqh; gap: .24cqw; }
+.signal-bars.big i { width: .5cqw; }
+
+.wallet-control {
+  display: flex;
+  align-items: center;
+  gap: .65cqw;
+  min-width: 13cqw;
+  padding: .7cqh .8cqw;
+  border: .12cqw solid #646350;
+  color: var(--olive-bright);
+  cursor: pointer;
+  text-align: left;
+  background: linear-gradient(#252820, #0d0f0c);
+  box-shadow: inset 0 0 .8cqw #000, 0 .25cqh .4cqh #000;
+  clip-path: polygon(7% 0, 100% 0, 100% 82%, 93% 100%, 0 100%, 0 18%);
+}
+
+.wallet-control:hover { filter: brightness(1.2); }
+.wallet-control .wallet-copy { display: flex; flex: 1; flex-direction: column; line-height: 1; }
+.wallet-control small { color: #797b55; font-size: .65cqw; letter-spacing: .14em; }
+.wallet-control strong { margin-top: .3cqh; font-size: 1.05cqw; letter-spacing: .06em; }
+.wallet-control.large { width: 100%; min-width: 0; justify-content: center; color: #c4c7a1; }
+.wallet-control.large strong { font-size: .92cqw; }
+
+.crt-screen {
+  position: relative;
+  overflow: hidden;
+  border: .55cqw solid #0a0b09;
+  color: #a6dc76;
+  font-family: 'IBM Plex Mono', monospace;
+  background:
+    repeating-linear-gradient(0deg, rgba(107,160,74,.04) 0 .2cqh, transparent .2cqh .45cqh),
+    radial-gradient(circle at 50% 50%, #152514, #071008 73%);
+  box-shadow: inset 0 0 2cqw #000, 0 0 .2cqw #86836a;
+}
+
+.waveform {
+  display: block;
+  height: 2.2cqh;
+  opacity: .65;
+  background:
+    linear-gradient(transparent 48%, #86ad60 49% 52%, transparent 53%),
+    repeating-linear-gradient(87deg, transparent 0 .5cqw, #86ad60 .52cqw .58cqw, transparent .6cqw 1.1cqw);
+  clip-path: polygon(0 48%, 4% 44%, 7% 53%, 11% 35%, 14% 64%, 18% 47%, 22% 51%, 27% 42%, 32% 55%, 38% 48%, 42% 50%, 47% 38%, 51% 65%, 55% 45%, 61% 51%, 66% 44%, 70% 57%, 74% 46%, 79% 50%, 84% 41%, 89% 54%, 94% 46%, 100% 50%, 100% 55%, 0 55%);
+}
+
+.dev-nav {
+  position: absolute;
+  right: .75cqw;
+  bottom: .75cqh;
+  z-index: 100;
+  display: flex;
+  gap: .35cqw;
+  opacity: .2;
+  transition: opacity .2s;
+}
+
+.dev-nav:hover, .dev-nav.is-open { opacity: 1; }
+.dev-nav > button { width: 2.2cqw; aspect-ratio: 1; border: .08cqw solid #5f604b; color: #b3a967; background: #10120e; cursor: pointer; font: 700 .7cqw 'IBM Plex Mono'; }
+.dev-nav-links { display: none; align-items: center; gap: .18cqw; padding: .25cqh .3cqw; border: .08cqw solid #5f604b; background: rgba(5,6,5,.94); }
+.dev-nav.is-open .dev-nav-links { display: flex; }
+.dev-nav a { padding: .25cqh .28cqw; color: #9a9b75; font: 600 .55cqw 'IBM Plex Mono'; text-decoration: none; }
+.dev-nav a:hover { color: #ffc12a; }
+
+.global-wallet { position: absolute; z-index: 65; right: 1.2cqw; top: 1.1cqh; opacity: .34; transition: opacity .2s; transform: scale(.72); transform-origin: top right; }
+.global-wallet:hover, .global-wallet:focus-within { opacity: 1; }
+
+.rotate-notice { display: none; }
+
+/* Home */
+.home-screen {
+  display: grid;
+  grid-template-columns: 23.5% 53% 23.5%;
+  padding: 1.3cqh 1.1cqw;
+  background:
+    radial-gradient(circle at 49% 36%, rgba(87,79,53,.35), transparent 34%),
+    repeating-linear-gradient(-45deg, transparent 0 7cqw, rgba(184,139,45,.08) 7cqw 8cqw),
+    linear-gradient(110deg, #0d100c, #28271e 47%, #090b09);
+}
+
+.home-left, .home-right { position: relative; z-index: 1; }
+.home-command { z-index: 2; margin: 4.5cqh 0 6.5cqh; padding: 4cqh 3.5cqw 2cqh; border-width: .25cqw; }
+.home-command > .wing-star { height: 6cqh; }
+.home-command .brand-mark { margin-top: 1.5cqh; font-size: 8.7cqw; }
+.home-tagline { display: flex; align-items: center; justify-content: center; gap: 1.25cqw; margin: 1.6cqh 0 3.1cqh; padding: 1.1cqh 0; border-block: .1cqw solid #606052; font: 500 1.7cqw 'IBM Plex Mono'; letter-spacing: .04em; color: #c6c2b0; }
+.home-tagline span { color: #666657; }
+.home-actions { display: grid; gap: 2.2cqh; width: 78%; margin: 0 auto; }
+.home-actions .plate-button { min-height: 10.2cqh; }
+.stay-frosty { position: absolute; left: 28%; right: 28%; bottom: -5.2cqh; height: 5cqh; padding-top: 1.15cqh; border: .13cqw solid #46473d; text-align: center; color: #77745a; background: #161814; box-shadow: inset 0 0 .5cqw #000; font-size: 1.15cqw; }
+
+.operation-plate { height: 14cqh; padding: 3.7cqh 2.4cqw; color: #8a8154; }
+.operation-plate strong, .operation-plate span { display: block; }
+.operation-plate strong { font-size: 1.5cqw; }
+.operation-plate span { margin-top: .8cqh; font-size: 1cqw; }
+.radar-panel { height: 52cqh; border-radius: 0; }
+.radar { position: absolute; width: 19cqw; aspect-ratio: 1; left: 1.2cqw; top: 2.7cqh; overflow: hidden; border-radius: 50%; border: .1cqw solid #55583d; background: repeating-radial-gradient(circle, transparent 0 2.7cqw, #50583a 2.75cqw 2.84cqw), linear-gradient(90deg, transparent 49.7%, #55583d 49.8% 50.2%, transparent 50.3%), linear-gradient(transparent 49.7%, #55583d 49.8% 50.2%, transparent 50.3%); opacity: .78; }
+.radar-sweep {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  transform-origin: 50% 50%;
+  background: conic-gradient(
+    from -18deg at 50% 50%,
+    transparent 0deg,
+    rgba(222, 224, 164, .08) 2deg,
+    rgba(222, 224, 164, .82) 24deg,
+    rgba(222, 224, 164, .24) 34deg,
+    transparent 42deg,
+    transparent 360deg
+  );
+  animation: radar 5s linear infinite;
+  will-change: transform;
+}
+.radar-sweep::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 48%;
+  height: .08cqw;
+  transform-origin: left center;
+  transform: rotate(24deg);
+  background: linear-gradient(90deg, rgba(235, 233, 174, .9), rgba(235, 233, 174, 0));
+  box-shadow: 0 0 .35cqw rgba(218, 217, 142, .48);
+}
+@keyframes radar { to { transform: rotate(1turn); } }
+.radar-blip { position: absolute; width: .48cqw; aspect-ratio: 1; border-radius: 50%; background: #e4db88; box-shadow: 0 0 1cqw #d9d66d; }
+.radar-blip.one { top: 28%; left: 64%; }.radar-blip.two { top: 66%; left: 34%; }.radar-blip.three { top: 72%; left: 72%; }
+.radar b { position: absolute; right: .6cqw; bottom: 2cqh; font-size: .75cqw; color: #a13d2c; }
+.dog-tags { position: absolute; top: 46cqh; left: 2cqw; z-index: 4; transform: rotate(-9deg); }
+.dog-chain { position: absolute; width: 16cqw; height: 30cqh; right: 7cqw; bottom: 12cqh; border: .22cqw dotted #aba99a; border-radius: 48%; transform: rotate(25deg); filter: drop-shadow(0 .2cqh .15cqh #000); }
+.dog-tag {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2.2cqh;
+  width: 10cqw;
+  height: 24cqh;
+  overflow: hidden;
+  padding: 2.4cqh 1.05cqw 2cqh;
+  border: .35cqw double #b8b09a;
+  border-radius: 2cqw;
+  color: #171712;
+  background: linear-gradient(135deg, #8a887a, #4c4b42);
+  box-shadow: 0 .8cqh 1cqh #000;
+  text-align: center;
+}
+.dog-tag .wing-star {
+  flex: 0 0 auto;
+  width: 78%;
+  gap: .18cqw;
+  color: #262720;
+  transform: none;
+}
+.dog-tag .wing-star i { width: 1.3cqw; height: .22cqh; box-shadow: 0 .48cqh currentColor; }
+.dog-tag .wing-star i:nth-of-type(2),
+.dog-tag .wing-star i:nth-of-type(3) { width: .72cqw; }
+.dog-tag .wing-star span { font-size: 1.25cqw; }
+.dog-tag > span {
+  display: block;
+  width: 100%;
+  font: 700 1.04cqw/1.22 'Oswald', sans-serif;
+  letter-spacing: -.015em;
+  text-align: center;
+  overflow-wrap: normal;
+}
+.motto-plate { position: absolute; left: -1cqw; right: 2cqw; bottom: .7cqh; height: 15cqh; padding: 8cqh 2.5cqw 0; color: #7b7756; font-size: 1.05cqw; }
+
+.home-right { padding: 8cqh 1cqw 0; }
+.radio-unit { height: 69cqh; padding: 3cqh 1.3cqw 1.5cqh; overflow: visible; }
+.radio-unit h3 { margin: 0 0 1.3cqh; text-align: center; font-size: 1.45cqw; color: #b4aa8d; }
+.radio-antenna { position: absolute; bottom: 97%; width: 2.4cqw; border: .42cqw solid #171914; border-bottom: 0; background: linear-gradient(90deg, #0b0c0a, #414137, #0a0b09); box-shadow: inset 0 0 .35cqw #000; }
+.radio-antenna::after { content: ''; position: absolute; left: -.42cqw; right: -.42cqw; bottom: 17%; height: .35cqh; background: #060706; box-shadow: 0 -2cqh #060706, 0 -4cqh #060706; }
+.radio-antenna.one { left: 2cqw; height: 15cqh; }.radio-antenna.two { right: 2.5cqw; height: 12cqh; }
+.radio-unit .crt-screen { height: 31cqh; padding: 3.5cqh 1.4cqw 1.5cqh; font-size: 1.2cqw; line-height: 1.45; white-space: pre-line; }
+.radio-unit .crt-screen p { margin: 2cqh 0 3.3cqh; }
+.radio-controls { display: grid; grid-template-columns: 1fr 1fr; align-items: center; height: 11cqh; padding: 1.2cqh 1cqw; }
+.radio-controls div:first-child { display: grid; place-items: center; }
+.radio-controls small { color: #8d8566; font-size: .65cqw; }.radio-controls strong { color: #9bd458; font: 500 2cqw 'IBM Plex Mono'; }
+.knob { width: 4.2cqw; aspect-ratio: 1; border: .4cqw solid #0b0c0a; border-radius: 50%; background: repeating-conic-gradient(#77715b 0 2deg, #171914 2deg 12deg); box-shadow: inset 0 0 1cqw #000, 0 0 0 .12cqw #5e5c4d; }
+.warning-plate { height: 16cqh; margin: 1.5cqh -1cqw 0 1cqw; padding: 3cqh 1cqw 1cqh 5cqw; color: #a84632; font-size: .95cqw; }
+.warning-plate .warning-icon { position: absolute; left: .7cqw; top: 2.5cqh; }
+.warning-plate span b { display: block; font-size: 1.2cqw; }
+
+.modal-backdrop { position: absolute; inset: 0; z-index: 90; display: grid; place-items: center; background: rgba(0,0,0,.82); backdrop-filter: blur(.3cqw); }
+.how-modal { width: 48cqw; padding: 5cqh 5cqw; color: #19180f; }
+.how-modal h2 { margin: 1cqh 0 2cqh; font: 400 4cqw 'Black Ops One'; }
+.how-modal small { font: 600 .8cqw 'IBM Plex Mono'; }
+.how-modal ol { margin: 0 0 3cqh; padding-left: 1.7cqw; font: 500 1.35cqw/1.6 'IBM Plex Mono'; }
+.modal-close { position: absolute; z-index: 8; right: 1.2cqw; top: 1cqh; border: 0; color: #222; cursor: pointer; background: transparent; font-size: 2cqw; }
+
+/* Matchmaking */
+.matchmaking-screen { background: linear-gradient(rgba(14,16,12,.87), rgba(14,16,12,.75)), repeating-linear-gradient(90deg, transparent 0 5.9cqw, rgba(170,165,125,.08) 5.9cqw 6cqw), #11130f; }
+.match-header { position: relative; z-index: 2; display: grid; grid-template-columns: 17% 66% 17%; height: 25cqh; padding: 2cqh 2.2cqw 0; }
+.warning-mini { height: 17cqh; padding: 4.3cqh .8cqw 1cqh 5.6cqw; color: var(--danger); }
+.warning-mini .warning-icon { position: absolute; left: 1cqw; top: 4.2cqh; }
+.warning-mini span { font-size: .88cqw; }.warning-mini b { display: block; font-size: 1.2cqw; }
+.match-brand { height: 21cqh; padding-top: 4.3cqh; text-align: center; }
+.match-brand .brand-mark.compact { font-size: 4.1cqw; }
+.match-brand > span { display: block; margin-top: 1cqh; color: #8b825e; font-size: 1.2cqw; letter-spacing: .08em; }
+.match-brand .wing-star { transform: scale(.75); }
+.network-unit { height: 17cqh; padding: 4.8cqh .8cqw 1cqh; }
+.match-body { position: relative; z-index: 2; display: grid; grid-template-columns: 13% 43.5% 43.5%; height: 58cqh; padding: 1cqh 7cqw 0 1.5cqw; gap: 1cqw; }
+.mission-note { align-self: center; width: 10cqw; height: 34cqh; padding: 5cqh 1.3cqw; color: #2a2a20; background: #a49d83; transform: rotate(-5deg); box-shadow: 0 1cqh 1cqh #000; font: 600 .75cqw/1.55 'IBM Plex Mono'; }
+.mission-note::before { content: ''; position: absolute; width: 2cqw; height: 3cqh; left: 3.8cqw; top: -1.5cqh; border: .25cqw solid #262820; border-radius: 50%; }
+.mission-note span { border-bottom: .1cqw solid #2c2d24; }.mission-note p { margin: 2.8cqh 0; }.mission-note .wing-star { color: #37382b; transform: scale(.7); }.mission-note b { display: inline-block; margin-top: 1.2cqh; padding: .4cqh .3cqw; border: .16cqw solid #8c2b24; color: #8c2b24; }
+.room-form { min-width: 0; }
+.room-panel { height: 50cqh; padding: 5.8cqh 5cqw 3cqh; text-align: center; }
+.room-panel h2 { margin: 0 0 2cqh; font: 400 2.75cqw 'Black Ops One'; }
+.room-panel small, .room-panel label { display: block; margin-bottom: 2cqh; color: #b0a47f; font-size: 1.1cqw; letter-spacing: .06em; }
+.room-code, .room-panel input { display: grid; width: 100%; height: 12.5cqh; place-items: center; margin: 0 0 2.6cqh; border: .25cqw solid #090a08; color: #dbd7c5; background: #0d0f0c; box-shadow: inset 0 0 1.5cqw #000, 0 0 0 .12cqw #6f6a50; font: 400 5.2cqw 'Black Ops One'; letter-spacing: .04em; text-align: center; }
+.room-panel input { color: #aaa58f; font-size: 2.4cqw; text-transform: uppercase; }
+.room-panel input::placeholder { color: #484a3d; }
+.room-panel .plate-button { min-height: 7.8cqh; font-size: 2cqw; }
+.enter-room-link { margin-top: .8cqh; border: 0; color: #a6a071; cursor: pointer; background: transparent; font-size: .85cqw; letter-spacing: .08em; }
+.player-count-plate { position: absolute; z-index: 2; left: 31%; right: 31%; bottom: 7.5cqh; height: 8cqh; padding: 2cqh; color: #bb901e; text-align: center; font-size: 1.8cqw; letter-spacing: .08em; }
+.player-count-plate span { color: #706d4d; padding: 0 2cqw; }
+.map-strip { position: absolute; left: 15%; right: 15%; bottom: 0; height: 16cqh; opacity: .55; background: linear-gradient(rgba(174,155,105,.5) 0 .15cqw, transparent .15cqw), repeating-linear-gradient(86deg, #8e8162 0 .06cqw, transparent .08cqw 3cqw), repeating-linear-gradient(-18deg, transparent 0 3cqw, rgba(50,64,44,.8) 3cqw 3.2cqw, transparent 3.2cqw 8cqw), #756e57; }
+
+/* Lobby */
+.lobby-screen { padding: 1cqh .6cqw; background: linear-gradient(rgba(7,9,7,.93),rgba(10,12,9,.84)), repeating-linear-gradient(90deg, transparent 0 8cqw, rgba(159,160,119,.08) 8cqw 8.1cqw), #11130f; }
+.lobby-topbar { position: relative; z-index: 3; display: grid; grid-template-columns: 18% 58% 24%; align-items: center; height: 12cqh; padding: 1.3cqh 1.8cqw; border: .16cqw solid #4e5042; background: #121410; box-shadow: inset 0 0 1cqw #000; }
+.lobby-topbar .brand-mark.compact { justify-content: flex-start; font-size: 2.1cqw; }
+.operation-meta { display: flex; align-items: center; gap: 1.3cqw; font: 500 .85cqw 'IBM Plex Mono'; color: #7b7c6e; }.operation-meta b { color: #a69637; }.operation-meta i { color: #b1ad99; }
+.lobby-topbar .wallet-control { justify-self: end; }
+.lobby-left { position: absolute; z-index: 2; left: 5.5cqw; top: 12cqh; width: 63cqw; bottom: 11cqh; }
+.lobby-left > header { height: 17cqh; padding: 3cqh 2cqw; background: rgba(58,68,36,.78); border-bottom: .18cqw solid #76765a; }
+.lobby-left > header small { color: #6e7247; }.lobby-left > header h1 { display: inline-block; margin: 2cqh 0 0; font: 400 4.1cqw 'Black Ops One'; }.lobby-left > header .wing-star { float: right; margin-top: 4cqh; }
+.roster-panel { height: 43cqh; padding: 1cqh 1cqw; }
+.lobby-player { display: grid; grid-template-columns: 7cqw 3cqw 1fr 11cqw 1cqw; align-items: center; height: 10.2cqh; border-bottom: .15cqw solid #090a08; box-shadow: 0 .08cqh #4c4e41; }
+.player-number { color: #73743f; font-size: 1.8cqw; }.mini-chevron { color: #6c6f45; }.lobby-player > strong { font: 400 2.5cqw 'Black Ops One'; }
+.status-chip { padding: 1.2cqh 1cqw; border: .12cqw solid; background: transparent; text-align: center; font-size: 1.3cqw; font-weight: 700; letter-spacing: .04em; }.status-chip.ready { color: #87a83f; }.status-chip.connected { color: #b5964d; }.lobby-player button.status-chip { cursor: pointer; }
+.radio-feed { color: #b7b6a8; font: .68cqw/1.05 'IBM Plex Mono'; }.radio-feed strong { color: #67683e; }.radio-feed p { margin: .55cqh 0; }.radio-feed p span { color: #77796b; }.radio-feed p b { color: #b59c37; }.radio-feed.compact { height: 13cqh; padding: 1.2cqh 1cqw; background: rgba(5,7,5,.72); }
+.lobby-round-panel { position: absolute; z-index: 2; right: 1cqw; top: 12cqh; width: 29cqw; height: 75cqh; padding: 13cqh 2.3cqw 2cqh; text-align: center; }
+.lobby-round-panel h2 { margin: 0; font: 400 3.4cqw 'Black Ops One'; }.lobby-round-panel h2 em { color: #d8c490; font-style: normal; }.lobby-round-panel > .wing-star { margin: 3.4cqh 0; }.lobby-round-panel > small { font-size: 1.2cqw; color: #ae8a51; letter-spacing: .08em; }.countdown { display: block; margin: 1cqh 0 2.5cqh; color: #9e2a22; font: 400 5.5cqw 'Black Ops One'; }.lobby-round-panel .plate-button { margin-top: 1.8cqh; font-size: 1.65cqw; }
+.lobby-footer { position: absolute; z-index: 3; left: .5cqw; right: .5cqw; bottom: .5cqh; display: grid; grid-template-columns: 24% 10% 44% 22%; align-items: center; height: 11cqh; padding: 1.2cqh 2.6cqw; border: .14cqw solid #5c5b4a; background: #191b17; box-shadow: inset 0 0 1cqw #000; color: #777867; font-size: .8cqw; }.lobby-footer .wing-star { transform: scale(.6); }.lobby-footer .panel { height: 7cqh; padding: 2cqh; color: #6d6c42; text-align: center; }.footer-warning { display: flex; align-items: center; gap: .8cqw; justify-self: end; color: #883528; }.footer-warning .warning-icon { width: 2.5cqw; font-size: 1.2cqw; }
+
+/* Choice */
+.choice-screen { display: grid; grid-template-columns: 21% 58% 21%; grid-template-rows: 16% 74% 10%; padding: .8cqh .7cqw; background: linear-gradient(rgba(7,9,6,.82),rgba(8,10,7,.82)), radial-gradient(circle at center, #3b4024, #080a07 58%); }
+.metrics-bar { grid-column: 1 / 4; display: grid; grid-template-columns: 35% 30% 35%; z-index: 3; border: .15cqw solid #4a4d3b; background: linear-gradient(#1b1e18,#0c0e0c); box-shadow: inset 0 0 1cqw #000; }
+.metric { display: grid; place-items: center; align-content: center; border-right: .12cqw solid #393b2f; text-align: center; }.metric:last-child { border: 0; }.metric > span { font-size: 1.25cqw; letter-spacing: .08em; }.metric > strong { display: flex; align-items: center; gap: 1.2cqw; margin-top: .6cqh; font: 400 3.5cqw 'Black Ops One'; }.metric-olive strong { color: #8b974f; }.metric-amber strong { color: var(--signal-amber); }.clock-icon { font: 400 3cqw 'Oswald'; color: #777748; }
+.squad-panel { grid-column: 1; grid-row: 2; z-index: 2; margin-right: .65cqw; padding: 5.8cqh 1cqw 1cqh; }.squad-panel > header { position: absolute; left: 0; right: 0; top: 0; height: 5.2cqh; padding: 1.4cqh .9cqw; border-bottom: .12cqw solid #686752; color: #c9b283; font-size: .9cqw; }.squad-panel > header .wing-star { display: inline-flex; transform: scale(.45); width: 2.5cqw; }.squad-panel > header span { float: right; color: #7b7a5f; }
+.squad-player { height: 13.3cqh; padding: 2cqh 1.1cqw; border-bottom: .12cqw solid #5e5e4c; }.squad-player > div:first-child { display: flex; flex-direction: column; }.squad-player strong { font: 400 1.9cqw 'Black Ops One'; }.squad-player span { display: flex; align-items: center; gap: .7cqw; margin-top: 1.1cqh; color: #656b3b; font-size: 1.05cqw; }.squad-player span.choosing { color: var(--signal-amber); }.player-dots { position: relative; float: right; display: flex; flex-direction: column; gap: .65cqh; margin-top: -5cqh; }.player-dots i { width: .6cqw; aspect-ratio: 1; border-radius: 50%; background: #525735; }.player-dots i.active { background: #a9b961; }.squad-panel footer { padding-top: 1cqh; color: #757252; font-size: .65cqw; }.squad-panel footer .wing-star { transform: scale(.55); }
+.choice-arena { grid-column: 2; grid-row: 2; z-index: 2; display: grid; grid-template-rows: 1fr 1fr; gap: 2cqh; padding: 2cqh .85cqw 1.2cqh; }
+.choice-button { position: relative; display: grid; grid-template-columns: 24% 76%; align-items: center; overflow: hidden; padding: 2cqh 3cqw; border: .25cqw solid; cursor: pointer; clip-path: polygon(3% 0, 97% 0, 100% 12%, 100% 88%, 97% 100%, 3% 100%, 0 88%, 0 12%); box-shadow: inset 0 0 0 .25cqw #111, inset 0 0 2cqw #000, 0 .8cqh 1cqh #000; transition: filter .15s, transform .15s; }.choice-button::before { content:''; position:absolute; inset:.7cqw; border:.08cqw solid currentColor; opacity:.48; clip-path:inherit; }.choice-button:hover { filter: brightness(1.2); transform: translateY(-.25cqh); }.choice-button:active { transform: translateY(.3cqh); }.choice-button.pending { animation: transmit .3s infinite alternate; }
+@keyframes transmit { to { filter: brightness(1.45); } }
+.hold-choice { color: #d3cfaf; border-color: #879143; background: radial-gradient(circle at 50% 50%, rgba(140,153,48,.35), transparent 58%), repeating-linear-gradient(90deg, transparent 0 7cqw, rgba(142,156,56,.09) 7cqw 7.1cqw), #313b1a; }.press-choice { color: var(--danger-hot); border-color: #d2372b; background: radial-gradient(circle at 50% 50%, rgba(205,34,23,.32), transparent 58%), repeating-linear-gradient(90deg, transparent 0 7cqw, rgba(196,41,29,.12) 7cqw 7.1cqw), #200b09; box-shadow: inset 0 0 0 .25cqw #100403, inset 0 0 2cqw #000, 0 0 1cqw rgba(211,45,32,.35), 0 .8cqh 1cqh #000; }.choice-icon { display:grid; place-items:center; }.choice-icon .warning-icon { width: 7cqw; font-size: 3.5cqw; }.choice-icon .shield-icon { width: 7.2cqw; height: 9cqh; font-size: 3.2cqw; }.choice-copy { display: flex; flex-direction: column; align-items: center; }.choice-copy strong { font: 400 4.9cqw 'Black Ops One'; line-height: .9; white-space: nowrap; }.choice-copy small { width: 100%; margin-top: 2.1cqh; padding-top: 1cqh; border-top: .1cqw solid currentColor; font-size: .9cqw; letter-spacing: .07em; }
+.comms-panel { grid-column: 3; grid-row: 2; z-index: 2; margin-left: .65cqw; padding: 6.8cqh 1.1cqw 6cqh; }.comms-panel > header { position: absolute; inset: 0 0 auto; height: 6cqh; padding: 1.5cqh 1.7cqw; border-bottom: .12cqw solid #5b5b4c; font-size: 1.7cqw; }.comms-lines { height: 100%; overflow: hidden; }.comms-lines > div { position: relative; min-height: 8.2cqh; padding: 1cqh .4cqw; border-bottom: .07cqw solid #3c3e30; font-family: 'IBM Plex Mono'; }.comms-lines strong { color: #7c8d3d; font-size: .82cqw; }.comms-lines time { float: right; color: #7c7d66; font-size: .7cqw; }.comms-lines p { margin: .6cqh 0 0; font-size: .9cqw; }.comms-panel form { position: absolute; left: 1cqw; right: 1cqw; bottom: 1cqh; display: grid; grid-template-columns: 1fr 3cqw; height: 5cqh; border: .1cqw solid #69694e; }.comms-panel input { min-width: 0; border: 0; padding: 0 .65cqw; color: #9b9b7a; background: #13160f; font-size: .75cqw; }.comms-panel form button { border: 0; color: #c0b880; cursor: pointer; background: #494b2d; }
+.tactical-desk { grid-column: 1 / 4; grid-row: 3; z-index: 2; display: grid; place-items: center; border-top: .14cqw solid #5a5748; background: radial-gradient(ellipse at 40% 30%, #4a4433, transparent 23%), repeating-linear-gradient(115deg, #29271f 0 .15cqw, #161712 .15cqw 1.8cqw); }.tactical-desk span { padding: 1.2cqh 3cqw; border: .1cqw solid #4c4b3a; color: #9d8850; background: #1d1e18; font-size: .85cqw; font-style: italic; }
+
+/* Locked */
+.locked-screen { background: linear-gradient(rgba(5,7,6,.7),rgba(5,7,6,.82)), repeating-linear-gradient(90deg, transparent 0 6cqw, rgba(76,101,80,.13) 6cqw 6.1cqw), #09100e; }
+.locked-header { position: absolute; left: 20cqw; right: 22cqw; top: 1.2cqh; height: 31cqh; text-align: center; }.brand-strip { display: flex; align-items: center; justify-content: center; height: 6cqh; }.brand-strip .brand-mark.compact { font-size: 1.7cqw; }.brand-strip .wing-star { margin-left: 3cqw; transform: scale(.6); }.locked-header h1 { margin: 8cqh 0 2cqh; font: 400 4.65cqw 'Black Ops One'; white-space: nowrap; }.locked-header > .wing-star { transform: scale(.9); }
+.locked-metrics { position: absolute; left: 3cqw; top: 9cqh; width: 19cqw; display: grid; gap: 3.2cqh; }.locked-metrics > .panel { height: 26cqh; padding: 3cqh 1cqw; }.locked-metrics .metric { height: 100%; }.locked-metrics .metric > span { font-size: 1.4cqw; }.locked-metrics .metric > strong { font-size: 3.7cqw; }.locked-metrics .mission-status { height: 15cqh; color: #8eb65c; font-family: 'IBM Plex Mono'; }.mission-status small { color: #747860; }.mission-status p { font-size: .82cqw; }
+.locked-table { position: absolute; left: 27cqw; top: 34cqh; width: 47cqw; height: 47cqh; padding: 0 2.6cqw; }.table-heading, .locked-row { display: grid; grid-template-columns: 43% 47% 10%; align-items: center; }.table-heading { height: 8cqh; color: #908d75; font-size: 1.35cqw; }.locked-row { height: 9.3cqh; border-top: .12cqw solid #696755; }.locked-row strong { font: 400 2.5cqw 'Black Ops One'; }.locked-row span { font-size: 1.8cqw; text-align: center; }.locked-row i { font-style: normal; font-size: 2cqw; }.is-locked { color: #70934d; }.is-thinking { color: #d3a327; }
+.hand-radio { position: absolute; right: 3cqw; top: 14cqh; width: 21cqw; height: 73cqh; padding: 5cqh 2.2cqw 2cqh; overflow: visible; transform: rotate(1deg); }.hand-radio h3 { margin: 0 0 2cqh; color: #9b9a7a; }.hand-radio .crt-screen { height: 22cqh; padding: 2cqh 1.2cqw; }.hand-radio .crt-screen small { font-size: .62cqw; }.hand-radio .crt-screen p { font-size: 1.2cqw; line-height: 1.35; }.hand-radio .radio-antenna.one { left: 4cqw; height: 16cqh; }.hand-radio .radio-antenna.two { right: 3cqw; height: 13cqh; }.radio-keypad { display: grid; grid-template-columns: repeat(4,1fr); gap: .45cqw; margin-top: 3cqh; }.radio-keypad i { display: grid; height: 3.5cqh; place-items: center; border: .09cqw solid #656452; color: #c1bba1; background: #191b17; box-shadow: inset 0 0 .4cqw #000; font: normal .65cqw 'IBM Plex Mono'; }.locked-footer { position: absolute; left: 1cqw; right: 1cqw; bottom: 1cqh; display: flex; justify-content: space-between; height: 7cqh; padding: 2cqh 3cqw; border: .15cqw solid #4a4d3e; color: #77796a; background: #151814; font-size: .7cqw; }.locked-footer span { font-size: 1.15cqw; }
+
+/* Results */
+.results-screen { background: linear-gradient(rgba(7,8,6,.55),rgba(6,7,5,.74)), repeating-linear-gradient(90deg, transparent 0 4cqw, rgba(113,91,43,.1) 4cqw 4.1cqw), #0e100b; }
+.results-header { position: relative; z-index: 2; height: 24cqh; text-align: center; padding-top: 5cqh; }.results-header h1 { margin: 0; font: 400 6cqw 'Black Ops One'; line-height: 1; }.results-header > .wing-star { transform: scale(.8); }.round-stamp, .result-warning { position: absolute; top: 3.7cqh; width: 14cqw; height: 17cqh; padding: 2.2cqh 1.3cqw; text-align: left; }.round-stamp { left: 3cqw; color: #777b53; }.round-stamp small, .round-stamp strong { display: block; }.round-stamp small { font-size: .7cqw; }.round-stamp strong { margin-top: .65cqh; font-size: 1.55cqw; line-height: 1.15; }.result-warning { right: 3cqw; display: grid; grid-template-columns: 4cqw 1fr; align-items: center; color: #8f3529; font-size: .7cqw; }.result-warning b { display: block; font-size: 1cqw; }
+.result-cards { position: relative; z-index: 2; display: grid; grid-template-columns: repeat(4,1fr); gap: 1.2cqw; height: 27cqh; padding: 1cqh 4.5cqw; }.result-card { display: flex; flex-direction: column; align-items: center; justify-content: center; }.result-card strong { font: 400 2.7cqw 'Black Ops One'; }.result-card span { width: 85%; margin-top: 2cqh; padding-top: 1.8cqh; border-top: .08cqw solid #6d6b55; color: #66783e; font-size: 1.65cqw; text-align: center; }.result-card.pressed { border-color: #962c25; box-shadow: inset 0 0 0 .14cqw #080908, inset 0 0 0 .27cqw #67221c, inset 0 0 1.4cqw #000, 0 0 1cqw rgba(190,45,34,.25); }.result-card.pressed span { color: #b94136; }
+.winner-pot { position: relative; z-index: 2; display: grid; left: 30cqw; width: 40cqw; height: 20cqh; place-items: center; align-content: center; color: #d6a72a; background: linear-gradient(170deg,#29200e,#12100b); }.winner-pot span { font-size: 1.65cqw; }.winner-pot strong { font: 400 5.4cqw 'Black Ops One'; line-height: 1; }
+.threat-meter { position: absolute; z-index: 2; left: 7.5cqw; right: 7.5cqw; bottom: 15cqh; display: grid; grid-template-columns: 12% 1fr 12%; align-items: center; height: 9.5cqh; padding: 1.5cqh 2cqw; }.threat-meter > small { position: absolute; left: 43%; top: -.2cqh; padding: 0 1cqw; background: #13150f; font-size: .9cqw; }.safe-label,.risk-label { display: flex; align-items: center; gap: .8cqw; font-size: 1.2cqw; }.safe-label { color: #72983c; }.risk-label { color: #b13a29; justify-content: flex-end; }.safe-label .shield-icon,.risk-label .shield-icon { width: 3cqw; height: 4.5cqh; border-width: .15cqw; font-size: 1.1cqw; }.meter-track { position: relative; height: 4.3cqh; border: .12cqw solid #6a4f1a; background: linear-gradient(90deg,#547f28,#8c8a27 35%,#d09213 60%,#9e291f); }.meter-track::after { content:''; position:absolute; inset:0; background: repeating-linear-gradient(90deg,transparent 0 3cqw,rgba(10,10,7,.5) 3cqw 3.12cqw); }.meter-track i { position: absolute; z-index: 2; bottom: -3.4cqh; width: 0; height: 0; border-left: .65cqw solid transparent; border-right: .65cqw solid transparent; border-bottom: 2.3cqh solid #cfad66; filter: drop-shadow(0 0 .12cqw #000); transform: translateX(-50%); }
+.next-round { position: absolute; z-index: 3; left: 31cqw; bottom: 1.4cqh; width: 38cqw; }
+
+/* Victory */
+.victory-screen { background: radial-gradient(circle at 80% 52%,rgba(61,83,42,.5),transparent 29%), linear-gradient(90deg,rgba(8,10,7,.96) 0 60%,rgba(8,10,7,.66)), #11140d; }
+.ending-topbar { display: flex; justify-content: space-between; align-items: center; height: 9cqh; padding: 1cqh 7cqw; border-bottom: .12cqw solid #494b3d; background: #151712; }.ending-topbar .brand-mark.compact { font-size: 2.4cqw; }.ending-topbar > span { color: #788044; font-size: 1cqw; }
+.victory-title { position: absolute; left: 7cqw; top: 12cqh; width: 56cqw; text-align: center; }.victory-title h1 { margin: 0; font: 400 6.4cqw 'Black Ops One'; }.victory-title p { margin: 1.2cqh 0; color: #707b39; font-size: 2.6cqw; letter-spacing: .08em; }
+.mission-summary { position: absolute; left: 5cqw; top: 43cqh; width: 25cqw; height: 37cqh; padding: 2cqh 2cqw; }.mission-summary h3 { margin: 0 0 1.3cqh; padding-bottom: 1cqh; border-bottom: .1cqw solid #696b45; text-align: center; font-size: 1.15cqw; }.summary-row { display: grid; grid-template-columns: 4cqw 1fr auto; align-items: center; min-height: 9cqh; border-bottom: .08cqw dotted #565735; }.summary-row i { display: grid; width: 3.5cqw; height: 5.2cqh; place-items: center; border: .1cqw solid #737736; font-style: normal; font-size: 1.5cqw; }.summary-row span { font-size: 1.08cqw; }.summary-row strong { color: #87a43c; font-size: 1.8cqw; }
+.final-prize { position: absolute; left: 31cqw; top: 41cqh; width: 31cqw; height: 36cqh; display: grid; place-items: center; align-content: center; color: #e9ae39; background: linear-gradient(145deg,#332d1e,#13120d); }.final-prize > span { padding: 1cqh 1.3cqw; border: .12cqw solid #a87a22; background: #a47f36; color: #17130c; font-size: 1.4cqw; }.final-prize strong { margin: 3cqh 0; color: #ffbd3e; font: 400 5.5cqw 'Black Ops One'; text-shadow: 0 0 1.2cqw #c67610; }
+.trophy { position: absolute; right: 4cqw; top: 13cqh; width: 31cqw; height: 68cqh; text-align: center; }.medal-ribbon { position:absolute; left: 11cqw; top: 0; width: 10cqw; height: 25cqh; background: repeating-linear-gradient(90deg,#2e401e 0 2cqw,#b29138 2cqw 3cqw,#27371b 3cqw 5cqw); box-shadow: inset 0 0 1cqw #000; }.medal-wings { position:absolute; left: 2cqw; right:2cqw; top:24cqh; display:flex; justify-content:space-between; }.medal-wings i { width: 10cqw; height: 20cqh; border: .7cqw solid #9f8963; background: repeating-linear-gradient(25deg,#5a503d 0 1.1cqw,#a28e68 1.2cqw 1.8cqw); }.medal-wings i:first-child { clip-path:polygon(100% 0,100% 100%,0 75%); }.medal-wings i:last-child { clip-path:polygon(0 0,0 100%,100% 75%); }.medal-shield { position:absolute; left:7cqw; top:18cqh; display:grid; width:18cqw; height:30cqh; place-items:center; border:.8cqw double #b4a27e; color:#c8aa69; background:#25251f; font-size:8cqw; clip-path:polygon(50% 0,95% 17%,83% 77%,50% 100%,17% 77%,5% 17%); box-shadow:0 1cqh 2cqh #000; }.trophy > span { position:absolute; left:5cqw; right:5cqw; top:46cqh; z-index:2; padding:1cqh; border:.22cqw solid #2a261d; color:#1c1912; background:#9a8763; font-size:1cqw; }.trophy-base { position:absolute; left:7cqw; right:7cqw; bottom:0; height:11cqh; padding-top:3cqh; border:.3cqw solid #292a24; color:#b9a470; background:#3d3d33; font-size:1.1cqw; clip-path:polygon(8% 0,92% 0,100% 100%,0 100%); }
+.victory-actions { position:absolute; left:13cqw; bottom:3.5cqh; display:grid; grid-template-columns:1fr 1fr; gap:2cqw; width:54cqw; }.victory-actions .plate-button { font-size:1.9cqw; }
+
+/* Defeat */
+.defeat-screen { background: radial-gradient(circle at 87% 12%,rgba(180,29,20,.34),transparent 20%), linear-gradient(90deg,rgba(6,7,6,.93) 0 70%,rgba(11,8,7,.75)), #090a08; }
+.stay-alive { position:absolute; left:1cqw; top:30cqh; height:45cqh; color:#76766a; font-size:.8cqw; letter-spacing:.12em; writing-mode:vertical-rl; transform:rotate(180deg); }.defeat-copy { position:absolute; left:12cqw; top:5cqh; width:40cqw; }.defeat-copy > small { color:#656757; font:500 .85cqw/1.3 'IBM Plex Mono'; }.defeat-copy > small b { color:var(--danger); }.defeat-copy h1 { margin:1cqh 0 0; color:#b52820; font:400 7.1cqw 'Black Ops One'; line-height:1; }.defeat-copy > p { margin:1cqh 0 2.4cqh; color:#aaa698; font:500 1.7cqw 'IBM Plex Mono'; text-align:center; }.defeat-winner { display:grid; grid-template-columns:7cqw 1fr; align-items:center; height:12cqh; padding:1cqh 2cqw; border-color:#a22923; color:#b33229; }.defeat-winner > span { font-size:3.5cqw; }.defeat-winner strong { font:400 2cqw 'Black Ops One'; }.defeat-winner em { color:#bbb6a4; font-style:normal; }
+.debrief { position:absolute; left:12cqw; top:50cqh; width:39cqw; height:32cqh; padding:1cqh 3cqw; }.debrief h3 { margin:0; padding:0 0 .8cqh; border-bottom:.1cqw solid #565649; color:#8a8879; }.debrief .summary-row { min-height:8.4cqh; }.debrief .summary-row i { border:0; color:#a5a18b; }.debrief .summary-row strong { color:#bd3429; font-size:2.2cqw; }
+.failure-paper { position:absolute; left:53cqw; top:16cqh; display:flex; flex-direction:column; align-items:center; width:18cqw; height:66cqh; padding:9cqh 2cqw 2cqh; color:#401816; background:linear-gradient(155deg,#b0a58f,#746f61); clip-path:polygon(5% 0,93% 3%,100% 18%,95% 38%,100% 55%,94% 78%,100% 94%,88% 100%,5% 96%,0 82%,4% 65%,0 44%,4% 21%); transform:rotate(2deg); filter:drop-shadow(0 1cqh 1cqh #000); text-align:center; }.failure-paper > b { padding:.5cqh .5cqw; border:.16cqw solid #6f241e; font-size:1.4cqw; }.failure-paper .warning-icon { margin:4cqh 0 2cqh; width:8cqw; font-size:4cqw; }.failure-paper strong { font-size:1.25cqw; }.failure-paper > span { margin-top:2cqh; padding:.7cqh .5cqw; color:#b3a991; background:#28261f; font-size:.75cqw; }.failure-paper p { font-weight:700; font-size:.9cqw; }.failure-paper em { color:#6f211d; }
+.failure-radio { position:absolute; right:2cqw; top:17cqh; width:25cqw; height:67cqh; padding:5cqh 2.5cqw 3cqh; overflow:visible; transform:rotate(2deg); }.siren { position:absolute; left:11cqw; bottom:97%; width:5cqw; height:12cqh; border:.4cqw solid #200504; border-radius:2cqw 2cqw 0 0; background:radial-gradient(circle,#fa2c1f,#6b0b07); box-shadow:0 0 2cqw #ed2016; }.failure-radio h3 { color:#dc3b2e; font-size:1cqw; }.failure-radio .crt-screen { height:35cqh; padding:3cqh 2cqw; }.failure-radio .crt-screen small { font-size:.7cqw; }.failure-radio .crt-screen p { margin:5cqh 0 2cqh; font-size:1.8cqw; font-weight:600; }.failure-radio .crt-screen span { font-size:.8cqw; }.radio-dials { display:flex; justify-content:space-around; margin-top:3.5cqh; }.radio-dials i { width:4cqw; aspect-ratio:1; border:.25cqw solid #12130f; border-radius:50%; background:repeating-conic-gradient(#77725f 0 2deg,#171914 3deg 18deg); box-shadow:inset 0 0 1cqw #000; }
+.defeat-actions { position:absolute; left:12cqw; bottom:3cqh; display:grid; grid-template-columns:1fr 1.1fr; gap:2cqw; width:58cqw; }.defeat-actions .plate-button { font-size:1.7cqw; }
+
+@media (max-aspect-ratio: 4 / 3) and (orientation: portrait) {
+  .game-stage { display: none; }
+  .rotate-notice {
+    display: flex;
+    position: relative;
+    z-index: 4;
+    flex-direction: column;
+    align-items: center;
+    width: min(84vw, 28rem);
+    padding: 3rem 2rem;
+    border: 2px solid #696750;
+    color: #b5af93;
+    background: linear-gradient(#22251d,#0b0d0a);
+    box-shadow: inset 0 0 2rem #000, 0 1rem 3rem #000;
+    text-align: center;
+  }
+  .rotate-notice .warning-icon { color: var(--signal-amber); width: 5rem; font-size: 2.5rem; }
+  .rotate-notice strong { margin-top: 1rem; font: 400 2rem 'Black Ops One'; }
+  .rotate-notice span { margin-top: .75rem; color: #777a65; font: 500 .9rem 'IBM Plex Mono'; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+/* Live-contract additions: these only surface real room state and errors. */
+.plain-button, .leave-choice { border: 0; color: inherit; font: inherit; background: transparent; cursor: pointer; }
+.leave-choice { color: var(--khaki); font: 1.3cqw 'IBM Plex Mono', monospace; text-decoration: underline; }
+.locked-detail { max-width: 76%; color: var(--bone); font: 1.55cqw/1.45 'IBM Plex Mono', monospace; text-align: center; }
+.result-action { display: grid; gap: 1.7cqh; width: min(41cqw, 560px); margin: 4cqh auto; }
+.ui-error { position: absolute; z-index: 90; right: 4cqw; bottom: 4cqh; max-width: 42cqw; padding: 1.4cqh 1.8cqw; border: .12cqw solid var(--danger-hot); color: #ffd1c7; background: #32120e; font: 1.25cqw/1.4 'IBM Plex Mono', monospace; box-shadow: 0 .4cqh 1cqh #000; }
