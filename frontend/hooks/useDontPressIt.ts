@@ -212,6 +212,7 @@ export function useDontPressIt(roomId?: bigint) {
         abi: dontPressItAbi,
         functionName: "finalizeRound",
         args: [
+          roomId,
           pressCount.attestation,
           pressCount.signatures,
           winnerIndex.attestation,

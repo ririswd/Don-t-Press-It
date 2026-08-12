@@ -35,6 +35,7 @@ export const dontPressItAbi = [
     name: "finalizeRound",
     stateMutability: "nonpayable",
     inputs: [
+      { name: "roomId", type: "uint256" },
       {
         name: "pressCountAttestation",
         type: "tuple",
