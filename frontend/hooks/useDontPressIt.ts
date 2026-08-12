@@ -217,6 +217,10 @@ export function useDontPressIt(roomId?: bigint) {
           winnerIndex.attestation,
           winnerIndex.signatures,
         ],
+        // The attestation call simulates at ~111k gas on Base Sepolia, but some
+        // wallet RPCs return an unusably large estimate and reject it. A 250k
+        // cap leaves generous headroom while staying under their transaction cap.
+        gas: 250_000n,
       }));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not finalize the revealed round");
