@@ -10,7 +10,7 @@ const Header = () => {
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-foreground/40 animate-pulse" />
           <span className="text-sm font-medium text-foreground">
-            inco_lottery
+            dont_press_it
           </span>
         </div>
 

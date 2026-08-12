@@ -38,3 +38,5 @@ coverage/
 contracts/cache/
 contracts/artifacts/
 contracts/typechain-types/
+contracts/ignition/deployments/*/artifacts/
+contracts/ignition/deployments/*/build-info/

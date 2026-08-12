@@ -1,61 +1,55 @@
-# dont-press-it
+# Don't Press It
 
-A full-stack Inco dApp with Hardhat and RainbowKit.
+A private multiplayer game built for the Inco Summer Game Jam. Every player secretly chooses **PRESS IT** or **DON'T PRESS**. Choices remain encrypted onchain until the entire squad has committed.
 
-This template includes example contracts that demonstrate core confidential patterns:
+## The game loop
 
-### Confidential ERC20 (`ConfidentialERC20.sol`)
-A token where **balances and transfer amounts are encrypted**. Unlike standard ERC20 tokens where anyone can see how much you hold and send, confidential tokens keep this data private.
+1. A host creates a room for 2–4 players and shares its numeric room ID.
+2. Players join and the host starts a 10-minute round.
+3. Each player submits an encrypted boolean with Inco Lightning. No player can inspect another player's choice while the round is active.
+4. When everyone submits, the contract reveals the round handles. Any connected player attested-decrypts the public result and finalizes it onchain.
+5. If exactly one player pressed, they win the room's mission points. If no one pressed, the points grow; otherwise the squad continues.
+6. If someone abandons a round, anyone can safely expire it after the deadline. Submitted choices are never revealed.
 
-**Flow:**
-1. The owner mints tokens — the amount is converted to an encrypted `euint256` and added to their encrypted balance
-2. A user transfers tokens by submitting an encrypted amount — the contract checks `sender balance >= amount` **entirely in ciphertext** using `e.ge()`, then updates both balances without revealing any values on-chain
-3. Approvals and `transferFrom` work the same way — allowances are encrypted, and the contract verifies both balance and allowance conditions in encrypted space using `e.select()`
-4. Only the token holder (or addresses they explicitly `e.allow()`) can decrypt and view their own balance
+Mission points are in-game points only—there are no real-money prizes or deposits.
 
-### Confidential Lottery (`ConfidentialLottery.sol`)
-A lottery where **deposit amounts are hidden** and the **winner is selected using on-chain encrypted randomness**. No one can see who won until the winner claims.
+## Inco integration
 
-**Flow:**
-1. The owner starts a round with a duration, min/max participants
-2. Participants deposit encrypted token amounts via `deposit()` — each deposit is stored as an `euint256` and added to an encrypted pot (`_lotteryBalance`), so no one can see how much anyone deposited or the total pot size
-3. Once enough participants have joined, anyone can call `drawWinner()` — the contract generates a random encrypted index using `e.randBounded()` and creates an encrypted boolean (`ebool`) for each participant indicating whether they won
-4. Each participant can privately decrypt their `ebool` off-chain to check if they're the winner — only the winner sees `true`
-5. The winner calls `claimPrize()` with a **decryption attestation** (a cryptographic proof from the Inco covalidator) to prove they won, and the entire pot is transferred to them
-6. If the round is cancelled, participants can call `refund()` to get their encrypted deposit back
+`DontPressIt.sol` stores each decision as an `ebool`, computes the encrypted press count and sole-presser index, and only reveals those values after all players have submitted. Finalization verifies Inco covalidator decryption attestations onchain.
 
-
-## Project Structure
-
-```
-dont-press-it/
-├── contracts/     # Solidity smart contracts (Hardhat)
-├── frontend/            # Next.js frontend with RainbowKit
-└── package.json         # Workspace configuration
-```
-
-## Getting Started
-
-### Install Dependencies
+## Run locally
 
 ```bash
 npm install
+npm run contracts:compile
+npm run contracts:test:game
+npm run dev
 ```
 
-### Start Development
+## Deploy to Base Sepolia
+
+Set `PRIVATE_KEY_BASE_SEPOLIA` and `BASE_SEPOLIA_RPC_URL` in `contracts/.env`, then:
 
 ```bash
-# Start the frontend
-npm run dev
-
-# Compile contracts
-npm run contracts:compile
-
-# Run contract tests
-npm run contracts:test
+npm run contracts:deploy:game:testnet
 ```
 
-## Learn More
+Current Base Sepolia deployment: [`0xeF96d53d72E89431631A30Dcd2646ac2C67394Ca`](https://sepolia-explorer.base.org/address/0xeF96d53d72E89431631A30Dcd2646ac2C67394Ca)
 
-- [Inco Documentation](https://docs.inco.org)
-- [Hardhat Documentation](https://hardhat.org/docs)
+Copy the resulting address into the deployment platform's environment variables:
+
+```bash
+NEXT_PUBLIC_NETWORK=testnet
+NEXT_PUBLIC_DONT_PRESS_IT_ADDRESS=0x...
+NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=...
+```
+
+Then deploy the `frontend` app. Players can share rooms as `https://your-site.example/?room=1`.
+
+## Verification
+
+```bash
+npm run contracts:compile
+npm run contracts:test:game
+npm run build
+```

@@ -13,8 +13,8 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "web3 starter",
-  description: "ethereum dapp starter with solidity and next.js",
+  title: "Don't Press It — private multiplayer game",
+  description: "A multiplayer social-deduction game with encrypted choices on Inco.",
 };
 
 export default function RootLayout({
