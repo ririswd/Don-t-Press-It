@@ -163,8 +163,17 @@ describe("DontPressIt", function () {
     expect(finalized[10]).to.equal(false);
 
     await game.write.nextRound([1n], { account: host.account });
+    const nextRound = await game.read.getRoom([1n]);
+    expect(nextRound[4]).to.equal(2); // round
+    expect(nextRound[5]).to.equal(0); // submittedCount
+    expect(nextRound[9]).to.equal(false); // roundFinalized
     expect(await game.read.hasSubmitted([1n, host.account.address])).to.equal(false);
     expect(await game.read.hasSubmitted([1n, player.account.address])).to.equal(false);
+
+    // The same players can immediately make private choices in round two.
+    await game.write.submitChoice([1n, "0x00"], { account: host.account, value: 1n });
+    await game.write.submitChoice([1n, "0x01"], { account: player.account, value: 1n });
+    expect((await game.read.getRoom([1n]))[8]).to.equal(true); // revealReady
   });
 
   it("does not end the operation when more than one player presses", async function () {

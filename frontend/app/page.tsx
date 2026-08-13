@@ -3,6 +3,7 @@
 import { useEffect, useState, type PropsWithChildren } from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useDontPressIt } from "@/hooks/useDontPressIt";
+import { gameScreen } from "@/lib/gameScreen";
 import { parseRoomReference, roomCode, roomLink } from "@/lib/roomCode";
 
 type ScreenName = "home" | "matchmaking" | "lobby" | "choice" | "locked" | "result";
@@ -71,11 +72,10 @@ export default function Home() {
   const deadlineReached = game.deadline !== undefined && now >= Number(game.deadline) * 1_000;
   const secondsLeft = game.deadline === undefined ? null : Math.max(0, Math.ceil(Number(game.deadline) - now / 1_000));
 
-  const activeScreen: ScreenName = room && finalized
-    ? "result"
-    : room && started && screen === "lobby"
-      ? "choice"
-      : screen;
+  // The room is the source of truth for in-game navigation. In particular,
+  // nextRound clears `roundFinalized`; rendering must then return every
+  // player to their choice screen rather than leaving the old result visible.
+  const activeScreen = gameScreen(screen, Boolean(room), started, finalized);
 
   const content = (() => {
     if (activeScreen === "matchmaking") return <Matchmaking game={game} roomInput={roomInput} setRoomInput={setRoomInput} create={create} join={join} back={() => setScreen("home")} />;
