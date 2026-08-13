@@ -697,3 +697,7 @@ input:focus-visible {
 .locked-detail { max-width: 76%; color: var(--bone); font: 1.55cqw/1.45 'IBM Plex Mono', monospace; text-align: center; }
 .result-action { display: grid; gap: 1.7cqh; width: min(41cqw, 560px); margin: 4cqh auto; }
 .ui-error { position: absolute; z-index: 90; right: 4cqw; bottom: 4cqh; max-width: 42cqw; padding: 1.4cqh 1.8cqw; border: .12cqw solid var(--danger-hot); color: #ffd1c7; background: #32120e; font: 1.25cqw/1.4 'IBM Plex Mono', monospace; box-shadow: 0 .4cqh 1cqh #000; }
+.invite-code { border: 0; padding: 0; color: #b8a33d; background: transparent; font: inherit; letter-spacing: .08em; cursor: pointer; text-decoration: underline; text-underline-offset: .25em; }
+.countdown { color: #b8a33d; font-size: 2.1cqw; letter-spacing: .06em; white-space: nowrap; }
+.copy-invite { margin: -1.4cqh 0 .5cqh; font: .85cqw 'IBM Plex Mono', monospace; }
+.join-room > small { display: block; min-height: 2.2cqh; margin-top: .7cqh; color: #777b5e; font: .65cqw 'IBM Plex Mono', monospace; }

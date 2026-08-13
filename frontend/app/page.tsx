@@ -10,6 +10,39 @@ type Game = ReturnType<typeof useDontPressIt>;
 
 const shorten = (address: string) => `${address.slice(0, 6)}…${address.slice(-4)}`;
 
+// The contract stores rooms by an integer, but players should not have to
+// share bare database-looking numbers. This reversible code keeps every room
+// linkable without introducing an off-chain room registry.
+const ROOM_CODE_MASK = 0xd0a7e5n;
+
+function roomCode(roomId: bigint) {
+  const encoded = roomId ^ ROOM_CODE_MASK;
+  const body = encoded.toString(36).toUpperCase().padStart(6, "0");
+  const checksum = ((encoded * 31n + roomId) % 1296n).toString(36).toUpperCase().padStart(2, "0");
+  return `DPI-${body}-${checksum}`;
+}
+
+function base36ToBigInt(value: string) {
+  const alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  return [...value].reduce((total, character) => total * 36n + BigInt(alphabet.indexOf(character)), 0n);
+}
+
+function parseRoomReference(value: string): bigint | undefined {
+  const reference = value.trim().toUpperCase();
+  // Keep old numeric links working for rooms that were already created.
+  if (/^[1-9]\d*$/.test(reference)) return BigInt(reference);
+  const match = /^DPI-([0-9A-Z]+)-([0-9A-Z]{2})$/.exec(reference);
+  if (!match) return undefined;
+  try {
+    const encoded = base36ToBigInt(match[1]);
+    const id = encoded ^ ROOM_CODE_MASK;
+    const expectedChecksum = ((encoded * 31n + id) % 1296n).toString(36).toUpperCase().padStart(2, "0");
+    return id > 0n && expectedChecksum === match[2] ? id : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export default function Home() {
   const [screen, setScreen] = useState<ScreenName>("home");
   const [roomInput, setRoomInput] = useState("");
@@ -19,9 +52,10 @@ export default function Home() {
 
   useEffect(() => {
     const room = new URLSearchParams(window.location.search).get("room");
-    if (room && /^\d+$/.test(room) && BigInt(room) > 0n) {
-      setRoomId(BigInt(room));
-      setRoomInput(room);
+    const id = room ? parseRoomReference(room) : undefined;
+    if (id) {
+      setRoomId(id);
+      setRoomInput(roomCode(id));
       setScreen("lobby");
     }
   }, []);
@@ -32,15 +66,16 @@ export default function Home() {
 
   const selectRoom = (id: bigint) => {
     setRoomId(id);
-    setRoomInput(id.toString());
+    setRoomInput(roomCode(id));
     setScreen("lobby");
-    window.history.replaceState(null, "", `?room=${id}`);
+    window.history.replaceState(null, "", `?room=${roomCode(id)}`);
   };
   const create = async () => {
     try { selectRoom(await game.createRoom(4)); } catch { /* Hook shows the error in the screen. */ }
   };
   const join = () => {
-    if (/^\d+$/.test(roomInput) && BigInt(roomInput) > 0n) selectRoom(BigInt(roomInput));
+    const id = parseRoomReference(roomInput);
+    if (id) selectRoom(id);
   };
   const leave = () => {
     setRoomId(undefined);
@@ -106,7 +141,7 @@ function Radar() { return <div className="radar"><span className="radar-sweep" /
 
 function HomeScreen({ start }: { start: () => void }) { return <Screen className="home-screen"><aside className="home-left"><Panel className="operation-plate"><Rivets /><strong>OPERATION GRIDLOCK</strong><span>SECTOR 7-G / BRAVO</span></Panel><Panel className="radar-panel"><Radar /></Panel><Panel className="motto-plate">DISCIPLINE. FOCUS. VICTORY.</Panel></aside><Panel className="home-command"><Rivets /><WingStar /><BrandMark /><div className="home-tagline"><span>★</span> Trust no one. Hold the line. <span>★</span></div><div className="home-actions"><PlateButton onClick={start}>START GAME</PlateButton></div><div className="stay-frosty">★ STAY FROSTY ★</div></Panel><aside className="home-right"><Panel className="radio-unit" tone="olive"><Rivets /><div className="radio-antenna one" /><div className="radio-antenna two" /><h3>COMMS-01</h3><div className="crt-screen"><div className="signal-bars big"><i /><i /><i /><i /></div><p>Command online.<br />Awaiting operator.</p><span className="waveform" /></div><div className="radio-controls"><div><small>CHANNEL</small><strong>07</strong></div><div className="knob" /></div><WalletControl large /></Panel><Panel className="warning-plate"><WarningIcon /><span><b>WARNING</b>ONE CLICK CAN<br />COMPROMISE EVERYTHING.</span></Panel></aside></Screen>; }
 
-function Matchmaking({ game, roomInput, setRoomInput, create, join, back }: { game: Game; roomInput: string; setRoomInput: (value: string) => void; create: () => void; join: () => void; back: () => void }) { return <Screen className="matchmaking-screen"><header className="match-header"><Panel className="warning-mini"><WarningIcon /><span><b>WARNING</b>ONE WRONG MOVE<br />EVERYONE LOSES</span></Panel><Panel className="match-brand"><button className="plain-button" onClick={back}><BrandMark compact /></button><span>ROOM / MATCHMAKING</span><WingStar /></Panel><Panel className="network-unit"><WalletControl /></Panel></header><div className="match-body"><aside className="mission-note"><span>MISSION NOTE</span><p>COORDINATE.<br />COMMUNICATE.<br />DON&apos;T PRESS IT.</p><WingStar /><b>CLASSIFIED</b></aside><Panel className="room-panel create-room" tone="olive"><Rivets /><h2>— CREATE ROOM —</h2><small>★ START A PRIVATE OPERATION ★</small><div className="room-code">2–4 PLAYERS</div><CreateRoomAction game={game} create={create} /></Panel><Panel className="room-panel join-room"><Rivets /><h2>— JOIN ROOM —</h2><label htmlFor="room-code">★ ENTER ROOM ID ★</label><input id="room-code" value={roomInput} onChange={(event) => setRoomInput(event.target.value.replace(/\D/g, ""))} placeholder="ROOM ID" inputMode="numeric" /><PlateButton tone="bone" onClick={join} disabled={!/^\d+$/.test(roomInput)}>JOIN</PlateButton></Panel></div><Panel className="player-count-plate"><span>♟♟</span> 2–4 PLAYERS <span>♟♟</span></Panel><div className="map-strip" />{game.error && <ErrorBanner text={game.error} />}</Screen>; }
+function Matchmaking({ game, roomInput, setRoomInput, create, join, back }: { game: Game; roomInput: string; setRoomInput: (value: string) => void; create: () => void; join: () => void; back: () => void }) { return <Screen className="matchmaking-screen"><header className="match-header"><Panel className="warning-mini"><WarningIcon /><span><b>WARNING</b>ONE WRONG MOVE<br />EVERYONE LOSES</span></Panel><Panel className="match-brand"><button className="plain-button" onClick={back}><BrandMark compact /></button><span>ROOM / MATCHMAKING</span><WingStar /></Panel><Panel className="network-unit"><WalletControl /></Panel></header><div className="match-body"><aside className="mission-note"><span>MISSION NOTE</span><p>COORDINATE.<br />COMMUNICATE.<br />DON&apos;T PRESS IT.</p><WingStar /><b>CLASSIFIED</b></aside><Panel className="room-panel create-room" tone="olive"><Rivets /><h2>— CREATE ROOM —</h2><small>★ START A PRIVATE OPERATION ★</small><div className="room-code">2–4 PLAYERS</div><CreateRoomAction game={game} create={create} /></Panel><Panel className="room-panel join-room"><Rivets /><h2>— JOIN ROOM —</h2><label htmlFor="room-code">★ ENTER INVITE CODE ★</label><input id="room-code" value={roomInput} onChange={(event) => setRoomInput(event.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""))} placeholder="DPI-XXXXXX-XX" autoCapitalize="characters" /><small>Share the operation code with your squad.</small><PlateButton tone="bone" onClick={join} disabled={!parseRoomReference(roomInput)}>JOIN</PlateButton></Panel></div><Panel className="player-count-plate"><span>♟♟</span> 2–4 PLAYERS <span>♟♟</span></Panel><div className="map-strip" />{game.error && <ErrorBanner text={game.error} />}</Screen>; }
 
 function CreateRoomAction({ game, create }: { game: Game; create: () => void }) {
   return <ConnectButton.Custom>{({ account, chain, openChainModal, openConnectModal, mounted }) => {
@@ -117,7 +152,7 @@ function CreateRoomAction({ game, create }: { game: Game; create: () => void }) 
   }}</ConnectButton.Custom>;
 }
 
-function Lobby({ game, roomId, players, playerCount, maxPlayers, isHost, isPlayer, leave }: { game: Game; roomId: bigint; players: readonly string[]; playerCount: number; maxPlayers: number; isHost: boolean; isPlayer: boolean; leave: () => void }) { return <Screen className="lobby-screen"><header className="lobby-topbar"><BrandMark compact /><div className="operation-meta"><span>OPERATION: <b>#{roomId.toString()}</b></span><i>//</i><span>LOCATION: <b>BASE SEPOLIA</b></span><i>//</i><span>CHOICES: ENCRYPTED</span></div><WalletControl /></header><section className="lobby-left"><header><small>TACTICAL OPERATIONS</small><h1>LOBBY / READY ROOM</h1><WingStar /></header><Panel className="roster-panel"><Rivets />{players.map((player, index) => <RosterRow key={player} index={index} address={player} you={player.toLowerCase() === game.address?.toLowerCase()} status="READY" />)}{Array.from({ length: maxPlayers - playerCount }).map((_, index) => <RosterRow key={index} index={playerCount + index} address="OPEN SLOT" status="WAITING" />)}</Panel><div className="radio-feed compact"><strong>RADIO FEED</strong><p><span>[LIVE]</span> <b>COMMAND:</b> Awaiting squad readiness.</p><p><span>[INCO]</span> Choices will remain private.</p></div></section><Panel className="lobby-round-panel"><Rivets /><h2><em>{playerCount}/{maxPlayers}</em> PLAYERS</h2><WingStar /><small>{isHost ? "SQUAD LEADER ONLINE" : "WAITING FOR SQUAD LEADER"}</small><strong className="countdown">#{roomId.toString()}</strong>{!isPlayer && <PlateButton tone="bone" onClick={() => void game.joinRoom()} disabled={!game.address || game.isWorking || playerCount >= maxPlayers}>{game.isWorking ? "JOINING…" : "JOIN ROOM"}</PlateButton>}{isHost && <PlateButton tone="amber" onClick={() => void game.startGame()} disabled={game.isWorking || playerCount < 2}>{game.isWorking ? "STARTING…" : playerCount < 2 ? "NEED 2 PLAYERS" : "START ROUND"}</PlateButton>}<PlateButton tone="dark" onClick={leave}>LEAVE</PlateButton></Panel><footer className="lobby-footer"><span>// STAY FOCUSED<br />// TRUST NO ONE</span><WingStar /><Panel>DISCIPLINE&nbsp;&nbsp; ◆ &nbsp;&nbsp;FOCUS&nbsp;&nbsp; ◆ &nbsp;&nbsp;VICTORY</Panel><span className="footer-warning"><WarningIcon /> POINTS ONLY<br />NO REAL-MONEY PRIZES</span></footer>{game.error && <ErrorBanner text={game.error} />}</Screen>; }
+function Lobby({ game, roomId, players, playerCount, maxPlayers, isHost, isPlayer, leave }: { game: Game; roomId: bigint; players: readonly string[]; playerCount: number; maxPlayers: number; isHost: boolean; isPlayer: boolean; leave: () => void }) { const inviteCode = roomCode(roomId); const copyInvite = () => void navigator.clipboard.writeText(`${window.location.origin}/?room=${inviteCode}`); return <Screen className="lobby-screen"><header className="lobby-topbar"><BrandMark compact /><div className="operation-meta"><span>OPERATION: <button className="invite-code" onClick={copyInvite} title="Copy invite link">{inviteCode}</button></span><i>//</i><span>LOCATION: <b>BASE SEPOLIA</b></span><i>//</i><span>CHOICES: ENCRYPTED</span></div><WalletControl /></header><section className="lobby-left"><header><small>TACTICAL OPERATIONS</small><h1>LOBBY / READY ROOM</h1><WingStar /></header><Panel className="roster-panel"><Rivets />{players.map((player, index) => <RosterRow key={player} index={index} address={player} you={player.toLowerCase() === game.address?.toLowerCase()} status="READY" />)}{Array.from({ length: maxPlayers - playerCount }).map((_, index) => <RosterRow key={index} index={playerCount + index} address="OPEN SLOT" status="WAITING" />)}</Panel><div className="radio-feed compact"><strong>RADIO FEED</strong><p><span>[INVITE]</span> <button className="invite-code" onClick={copyInvite} title="Copy invite link">{inviteCode}</button></p><p><span>[INCO]</span> Choices will remain private.</p></div></section><Panel className="lobby-round-panel"><Rivets /><h2><em>{playerCount}/{maxPlayers}</em> PLAYERS</h2><WingStar /><small>{isHost ? "SQUAD LEADER ONLINE" : "WAITING FOR SQUAD LEADER"}</small><strong className="countdown">{inviteCode}</strong><button className="invite-code copy-invite" onClick={copyInvite}>COPY INVITE</button>{!isPlayer && <PlateButton tone="bone" onClick={() => void game.joinRoom()} disabled={!game.address || game.isWorking || playerCount >= maxPlayers}>{game.isWorking ? "JOINING…" : "JOIN ROOM"}</PlateButton>}{isHost && <PlateButton tone="amber" onClick={() => void game.startGame()} disabled={game.isWorking || playerCount < 2}>{game.isWorking ? "STARTING…" : playerCount < 2 ? "NEED 2 PLAYERS" : "START ROUND"}</PlateButton>}<PlateButton tone="dark" onClick={leave}>LEAVE</PlateButton></Panel><footer className="lobby-footer"><span>// STAY FOCUSED<br />// TRUST NO ONE</span><WingStar /><Panel>DISCIPLINE&nbsp;&nbsp; ◆ &nbsp;&nbsp;FOCUS&nbsp;&nbsp; ◆ &nbsp;&nbsp;VICTORY</Panel><span className="footer-warning"><WarningIcon /> POINTS ONLY<br />NO REAL-MONEY PRIZES</span></footer>{game.error && <ErrorBanner text={game.error} />}</Screen>; }
 
 function RosterRow({ index, address, status, you = false }: { index: number; address: string; status: string; you?: boolean }) { return <div className="lobby-player"><span className="player-number">{String(index + 1).padStart(2, "0")}</span><span className="mini-chevron">▶</span><strong>{you ? "YOU" : address.startsWith("0x") ? shorten(address) : address}</strong><span className={`status-chip ${status === "READY" ? "ready" : "connected"}`}>{status}</span><i className={`status-led ${status === "READY" ? "green" : "amber"}`} /></div>; }
 
