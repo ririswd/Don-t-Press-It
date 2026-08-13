@@ -33,6 +33,8 @@ yarn-error.log*
 
 # Testing
 coverage/
+contracts/coverage.json
+*.tsbuildinfo
 
 # Hardhat
 contracts/cache/
@@ -40,3 +42,5 @@ contracts/artifacts/
 contracts/typechain-types/
 contracts/ignition/deployments/*/artifacts/
 contracts/ignition/deployments/*/build-info/
+contracts/ignition/deployments/
+.vercel

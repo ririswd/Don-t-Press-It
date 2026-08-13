@@ -1,5 +1,6 @@
 import type { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox-viem";
+import "solidity-coverage";
 import * as dotenv from "dotenv";
 
 dotenv.config(); // Load environment variables

@@ -9,22 +9,21 @@
   "scripts": {
     "dev": "npm run dev --workspace=frontend",
     "build": "npm run build --workspace=frontend",
+    "lint": "npm run lint --workspace=frontend",
+    "typecheck": "npm run typecheck --workspace=frontend",
+    "test": "npm run contracts:test:game && npm run test --workspace=frontend",
+    "check": "npm run contracts:compile && npm run contracts:test:game && npm run lint && npm run typecheck && npm run test --workspace=frontend && npm run build",
     "contracts:compile": "npm run compile --workspace=contracts",
     "contracts:test": "npm run test --workspace=contracts",
     "contracts:test:game": "npm run test:game --workspace=contracts",
-    "contracts:deploy:local": "npm run deploy:local --workspace=contracts",
-    "contracts:deploy:testnet": "npm run deploy:testnet --workspace=contracts",
-    "contracts:deploy:mainnet": "npm run deploy:mainnet --workspace=contracts",
+    "contracts:coverage": "npm run test:coverage --workspace=contracts",
     "contracts:deploy:game:local": "npm run deploy:game:local --workspace=contracts",
     "contracts:deploy:game:testnet": "npm run deploy:game:testnet --workspace=contracts",
     "contracts:deploy:game:mainnet": "npm run deploy:game:mainnet --workspace=contracts",
-    "contracts:deploy:token:local": "npm run deploy:token:local --workspace=contracts",
-    "contracts:deploy:token:testnet": "npm run deploy:token:testnet --workspace=contracts",
-    "contracts:deploy:token:mainnet": "npm run deploy:token:mainnet --workspace=contracts",
     "contracts:node": "npm run node --workspace=contracts"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "overrides": {
     "forge-std": "github:foundry-rs/forge-std#2f05b3001ed9d74b171d17eac80b3765ce186a76",

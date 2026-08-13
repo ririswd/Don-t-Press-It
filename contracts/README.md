@@ -1,71 +1,31 @@
-# Inco Lite - Hardhat Template
+# Don’t Press It contract
 
-This template provides a **Hardhat setup** for developing, testing, and deploying **confidential smart contracts** on the Inco network — encryption, reencryption, decryption, and ciphertext formation.
+The game contract is [`contracts/DontPressIt.sol`](./contracts/DontPressIt.sol). It stores private player decisions as Inco Lightning `ebool` values, calculates the encrypted round outcome, and verifies the final TEE-backed decryption attestation.
 
-## Prerequisites
+## Commands
 
-- [Docker](https://docs.docker.com/get-docker/) installed (for the local node)
-- [Node.js](https://nodejs.org/) >= 18
-
-## Setup
-
-### 1. Install dependencies
-```sh
+```bash
 npm install
+npm run compile
+npm run test:game
+npm run test:coverage
 ```
 
-### 2. Configure environment variables
-```sh
-cp .env.sample .env
-```
-`.env` ships with the well-known Anvil key (`PRIVATE_KEY_ANVIL`) for local use. Before deploying to a live network, fill in `PRIVATE_KEY_BASE_SEPOLIA` / `BASE_SEPOLIA_RPC_URL` (and `PRIVATE_KEY_BASE` / `BASE_RPC_URL` for mainnet). Each network in `hardhat.config.ts` reads its own key:
+## Deploy to Base Sepolia
 
-```plaintext
-# Local Anvil (well-known default key — safe for local dev only!)
-PRIVATE_KEY_ANVIL=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+Copy `.env.sample` to `.env` and set:
 
-# Base Sepolia (testnet)
-PRIVATE_KEY_BASE_SEPOLIA=
+```bash
+PRIVATE_KEY_BASE_SEPOLIA=0x...
 BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
-
-# Base Mainnet
-PRIVATE_KEY_BASE=
-BASE_RPC_URL=https://mainnet.base.org
 ```
 
-### 3. Run a local node
+Then deploy:
 
-Start the local Inco node and covalidator. Skip this if you only target a live network like Base Sepolia.
-```sh
-npm run node      # docker compose up
+```bash
+npm run deploy:game:testnet
 ```
 
-### 4. Compile
-```sh
-npm run compile   # hardhat compile
-```
+Record the emitted address in the frontend deployment environment as `NEXT_PUBLIC_DONT_PRESS_IT_ADDRESS`.
 
-### 5. Run tests
-```sh
-npm run test:local     # against the local anvil node
-npm run test:testnet   # against Base Sepolia
-```
-
-## Deploy
-
-Deployments use [Hardhat Ignition](https://hardhat.org/ignition); each network reads its key from `.env`.
-
-```sh
-npm run deploy:local     # local Inco anvil node (start `npm run node` first)
-npm run deploy:testnet   # Base Sepolia
-npm run deploy:mainnet   # Base Mainnet
-```
-
-> These deploy `ConfidentialERC20` **and** `ConfidentialLottery`. To deploy only the token, use the `deploy:token:local` / `deploy:token:testnet` / `deploy:token:mainnet` variants.
-
-## Features
-
-- End-to-end encryption, reencryption, and decryption flows
-- Hardhat + viem test framework with local-node and testnet targets
-- Hardhat Ignition deployments to local node, Base Sepolia, and Base Mainnet
-- Local node with Docker Compose
+The deployed address is recorded in the project root README. Never commit `.env` files, private keys, or Ignition deployment artifacts.
