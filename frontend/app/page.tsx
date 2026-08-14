@@ -1,15 +1,16 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState, type PropsWithChildren } from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useDontPressIt } from "@/hooks/useDontPressIt";
-import { gameScreen } from "@/lib/gameScreen";
+import { activeChain } from "@/lib/network";
 import { parseRoomReference, roomCode, roomLink } from "@/lib/roomCode";
 
-type ScreenName = "home" | "matchmaking" | "lobby" | "choice" | "locked" | "result";
-type Tone = "olive" | "amber" | "bone" | "red" | "dark";
+type ScreenName = "home" | "how" | "matchmaking" | "lobby" | "choice" | "result";
 type Game = ReturnType<typeof useDontPressIt>;
 
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 const shorten = (address: string) => `${address.slice(0, 6)}…${address.slice(-4)}`;
 
 export default function Home() {
@@ -20,14 +21,14 @@ export default function Home() {
   const game = useDontPressIt(roomId);
 
   useEffect(() => {
-    const room = new URLSearchParams(window.location.search).get("room");
-    const id = room ? parseRoomReference(room) : undefined;
-    if (id) {
-      setRoomId(id);
-      setRoomInput(roomCode(id));
-      setScreen("lobby");
-    }
+    const reference = new URLSearchParams(window.location.search).get("room");
+    const id = reference ? parseRoomReference(reference) : undefined;
+    if (!id) return;
+    setRoomId(id);
+    setRoomInput(roomCode(id));
+    setScreen("lobby");
   }, []);
+
   useEffect(() => {
     const interval = window.setInterval(() => setNow(Date.now()), 1_000);
     return () => window.clearInterval(interval);
@@ -40,13 +41,20 @@ export default function Home() {
     setScreen("lobby");
     window.history.replaceState(null, "", `?room=${roomCode(id)}`);
   };
+
   const create = async () => {
-    try { selectRoom(await game.createRoom(4)); } catch { /* Hook shows the error in the screen. */ }
+    try {
+      selectRoom(await game.createRoom(4));
+    } catch {
+      // The contract hook exposes the wallet-safe error message.
+    }
   };
+
   const join = () => {
     const id = parseRoomReference(roomInput);
     if (id) selectRoom(id);
   };
+
   const leave = () => {
     game.clearError();
     setRoomId(undefined);
@@ -54,8 +62,13 @@ export default function Home() {
     window.history.replaceState(null, "", window.location.pathname);
   };
 
+  const playAgain = () => {
+    leave();
+    setScreen("matchmaking");
+  };
+
   const room = game.room;
-  const host = room?.[0] ?? "0x0000000000000000000000000000000000000000";
+  const host = room?.[0] ?? ZERO_ADDRESS;
   const players = (room?.[1] ?? []).slice(0, room?.[2] ?? 0);
   const playerCount = room?.[2] ?? 0;
   const maxPlayers = room?.[3] ?? 4;
@@ -66,87 +79,646 @@ export default function Home() {
   const revealReady = room?.[8] ?? false;
   const finalized = room?.[9] ?? false;
   const ended = room?.[10] ?? false;
-  const winner = room?.[11] ?? "0x0000000000000000000000000000000000000000";
-  const isPlayer = Boolean(game.address && players.some((player) => player.toLowerCase() === game.address?.toLowerCase()));
+  const winner = room?.[11] ?? ZERO_ADDRESS;
+  const isPlayer = Boolean(
+    game.address && players.some((player) => player.toLowerCase() === game.address?.toLowerCase()),
+  );
   const isHost = Boolean(game.address && host.toLowerCase() === game.address.toLowerCase());
   const deadlineReached = game.deadline !== undefined && now >= Number(game.deadline) * 1_000;
-  const secondsLeft = game.deadline === undefined ? null : Math.max(0, Math.ceil(Number(game.deadline) - now / 1_000));
+  const secondsLeft = game.deadline === undefined
+    ? null
+    : Math.max(0, Math.ceil(Number(game.deadline) - now / 1_000));
 
-  // The room is the source of truth for in-game navigation. In particular,
-  // nextRound clears `roundFinalized`; rendering must then return every
-  // player to their choice screen rather than leaving the old result visible.
-  const activeScreen = gameScreen(screen, Boolean(room), started, finalized);
+  const activeScreen: ScreenName = room && finalized
+    ? "result"
+    : room && started
+      ? "choice"
+      : screen;
+
+  const shared = {
+    game,
+    players,
+    playerCount,
+    maxPlayers,
+    round,
+    points,
+    submittedCount,
+    revealReady,
+    deadlineReached,
+    secondsLeft,
+  };
 
   const content = (() => {
-    if (activeScreen === "matchmaking") return <Matchmaking game={game} roomInput={roomInput} setRoomInput={setRoomInput} create={create} join={join} back={() => setScreen("home")} />;
-    if ((activeScreen === "lobby" || activeScreen === "choice" || activeScreen === "locked" || activeScreen === "result") && roomId) {
-      if (activeScreen === "result" && room) return <Results game={game} ended={ended} winner={winner} points={points} leave={leave} />;
-      if (activeScreen === "choice" || activeScreen === "locked") return <Choice game={game} players={players} playerCount={playerCount} round={round} points={points} submittedCount={submittedCount} revealReady={revealReady} deadlineReached={deadlineReached} secondsLeft={secondsLeft} leave={leave} />;
-      return <Lobby game={game} roomId={roomId} players={players} playerCount={playerCount} maxPlayers={maxPlayers} isHost={isHost} isPlayer={isPlayer} leave={leave} />;
+    if (activeScreen === "how") {
+      return <HowToPlay back={() => setScreen("home")} continueToGame={() => setScreen("matchmaking")} />;
     }
-    return <HomeScreen start={() => setScreen("matchmaking")} />;
+    if (activeScreen === "matchmaking") {
+      return (
+        <Matchmaking
+          game={game}
+          roomInput={roomInput}
+          setRoomInput={setRoomInput}
+          create={create}
+          join={join}
+          back={() => setScreen("home")}
+        />
+      );
+    }
+    if (activeScreen === "lobby" && roomId !== undefined) {
+      return (
+        <Lobby
+          game={game}
+          roomId={roomId}
+          players={players}
+          playerCount={playerCount}
+          maxPlayers={maxPlayers}
+          isHost={isHost}
+          isPlayer={isPlayer}
+          leave={leave}
+        />
+      );
+    }
+    if (activeScreen === "choice") {
+      return <Choice {...shared} leave={leave} />;
+    }
+    if (activeScreen === "result") {
+      return (
+        <Results
+          game={game}
+          players={players}
+          ended={ended}
+          winner={winner}
+          points={points}
+          round={round}
+          leave={leave}
+          playAgain={playAgain}
+        />
+      );
+    }
+    return <HomeScreen start={() => setScreen("matchmaking")} how={() => setScreen("how")} />;
   })();
 
-  return <main className="app-shell"><div className="ambient ambient-one" /><div className="ambient ambient-two" /><div className="game-stage"><div className="stage-surface" /><div className="stage-rim" />{content}</div><MobileGame activeScreen={activeScreen} game={game} roomId={roomId} roomInput={roomInput} setRoomInput={setRoomInput} start={() => setScreen("matchmaking")} back={() => setScreen("home")} create={create} join={join} leave={leave} players={players} playerCount={playerCount} maxPlayers={maxPlayers} isHost={isHost} isPlayer={isPlayer} round={round} points={points} submittedCount={submittedCount} revealReady={revealReady} deadlineReached={deadlineReached} ended={ended} winner={winner} /><div className="rotate-notice"><WarningIcon /><strong>Rotate device</strong><span>Tactical display requires landscape mode.</span></div></main>;
+  return (
+    <main className="candy-shell">
+      <div className="candy-stage">
+        <div className="stage-glitter" aria-hidden="true" />
+        {content}
+      </div>
+      <div className="rotate-notice" role="status">
+        <HeartGem />
+        <strong>Rotate your device</strong>
+        <span>This game is designed for a landscape screen.</span>
+      </div>
+    </main>
+  );
 }
 
-function Screen({ children, className = "" }: PropsWithChildren<{ className?: string }>) { return <section className={`screen ${className}`}>{children}</section>; }
-function Panel({ children, className = "", tone = "dark" }: PropsWithChildren<{ className?: string; tone?: Tone }>) { return <div className={`panel panel-${tone} ${className}`}>{children}</div>; }
-function Rivets() { return <span className="rivets"><i /><i /><i /><i /></span>; }
-function WingStar({ className = "" }: { className?: string }) { return <div className={`wing-star ${className}`}><i /><i /><span>★</span><i /><i /></div>; }
-function WarningIcon() { return <span className="warning-icon"><span>!</span></span>; }
-function ShieldIcon() { return <span className="shield-icon">★</span>; }
-function BrandMark({ compact = false }: { compact?: boolean }) { return <div className={`brand-mark ${compact ? "compact" : ""}`}><span>DON&apos;T</span><span className="brand-press">PRESS</span><span className="brand-it">IT</span></div>; }
-function PlateButton({ children, tone = "olive", onClick, disabled = false }: PropsWithChildren<{ tone?: Tone; onClick: () => void; disabled?: boolean }>) { return <button className={`plate-button plate-${tone}`} onClick={onClick} disabled={disabled}><Rivets /><span className="button-chevron">»</span><span className="button-label">{children}</span><span className="button-chevron">«</span></button>; }
-
-function WalletControl({ large = false }: { large?: boolean }) {
-  return <ConnectButton.Custom>{({ account, chain, openAccountModal, openChainModal, openConnectModal, mounted }) => {
-    const connected = mounted && account && chain;
-    if (!connected) return <button className={`wallet-control ${large ? "large" : ""}`} onClick={openConnectModal}><span className="status-led red" /><span className="wallet-copy"><small>SECURE LINK</small><strong>CONNECT WALLET</strong></span><span className="signal-bars"><i /><i /><i /><i /></span></button>;
-    if (chain.unsupported) return <button className="wallet-control" onClick={openChainModal}><span className="status-led red" /><span className="wallet-copy"><small>NETWORK ALERT</small><strong>SWITCH NETWORK</strong></span></button>;
-    return <button className={`wallet-control ${large ? "large" : ""}`} onClick={openAccountModal}><span className="status-led green" /><span className="wallet-copy"><small>{chain.name}</small><strong>{account.displayName}</strong></span><span className="signal-bars"><i /><i /><i /><i /></span></button>;
-  }}</ConnectButton.Custom>;
+function Screen({ children, className = "" }: PropsWithChildren<{ className?: string }>) {
+  return <section className={`candy-screen ${className}`}>{children}</section>;
 }
 
-function Radar() { return <div className="radar"><span className="radar-sweep" /><i className="radar-blip one" /><i className="radar-blip two" /><i className="radar-blip three" /><b>OBJ. DELTA</b></div>; }
+function CandyPanel({ children, className = "" }: PropsWithChildren<{ className?: string }>) {
+  return <div className={`candy-panel ${className}`}>{children}</div>;
+}
 
-function HomeScreen({ start }: { start: () => void }) { return <Screen className="home-screen"><aside className="home-left"><Panel className="operation-plate"><Rivets /><strong>OPERATION GRIDLOCK</strong><span>SECTOR 7-G / BRAVO</span></Panel><Panel className="radar-panel"><Radar /></Panel><Panel className="motto-plate">DISCIPLINE. FOCUS. VICTORY.</Panel></aside><Panel className="home-command"><Rivets /><WingStar /><BrandMark /><div className="home-tagline"><span>★</span> Trust no one. Hold the line. <span>★</span></div><div className="home-actions"><PlateButton onClick={start}>START GAME</PlateButton></div><div className="stay-frosty">★ STAY FROSTY ★</div></Panel><aside className="home-right"><Panel className="radio-unit" tone="olive"><Rivets /><div className="radio-antenna one" /><div className="radio-antenna two" /><h3>COMMS-01</h3><div className="crt-screen"><div className="signal-bars big"><i /><i /><i /><i /></div><p>Command online.<br />Awaiting operator.</p><span className="waveform" /></div><div className="radio-controls"><div><small>CHANNEL</small><strong>07</strong></div><div className="knob" /></div><WalletControl large /></Panel><Panel className="warning-plate"><WarningIcon /><span><b>WARNING</b>ONE CLICK CAN<br />COMPROMISE EVERYTHING.</span></Panel></aside></Screen>; }
+function BrandLogo({ compact = false }: { compact?: boolean }) {
+  return (
+    <Image
+      className={`candy-logo ${compact ? "compact" : ""}`}
+      src="/candy/candy-logo.jpg"
+      width={2528}
+      height={1696}
+      sizes={compact ? "30vw" : "62vw"}
+      priority={!compact}
+      alt="Don’t Press It"
+    />
+  );
+}
 
-function Matchmaking({ game, roomInput, setRoomInput, create, join, back }: { game: Game; roomInput: string; setRoomInput: (value: string) => void; create: () => void; join: () => void; back: () => void }) { return <Screen className="matchmaking-screen"><header className="match-header"><Panel className="warning-mini"><WarningIcon /><span><b>WARNING</b>ONE WRONG MOVE<br />EVERYONE LOSES</span></Panel><Panel className="match-brand"><button className="plain-button" onClick={back}><BrandMark compact /></button><span>ROOM / MATCHMAKING</span><WingStar /></Panel><Panel className="network-unit"><WalletControl /></Panel></header><div className="match-body"><aside className="mission-note"><span>MISSION NOTE</span><p>COORDINATE.<br />COMMUNICATE.<br />DON&apos;T PRESS IT.</p><WingStar /><b>CLASSIFIED</b></aside><Panel className="room-panel create-room" tone="olive"><Rivets /><h2>— CREATE ROOM —</h2><small>★ START A PRIVATE OPERATION ★</small><div className="room-code">2–4 PLAYERS</div><CreateRoomAction game={game} create={create} /></Panel><Panel className="room-panel join-room"><Rivets /><h2>— JOIN ROOM —</h2><label htmlFor="room-code">★ ENTER INVITE CODE ★</label><input id="room-code" value={roomInput} onChange={(event) => setRoomInput(event.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""))} placeholder="DPI-XXXXXX-XX" autoCapitalize="characters" /><small>Share the operation code with your squad.</small><PlateButton tone="bone" onClick={join} disabled={!parseRoomReference(roomInput)}>JOIN</PlateButton></Panel></div><Panel className="player-count-plate"><span>♟♟</span> 2–4 PLAYERS <span>♟♟</span></Panel><div className="map-strip" />{game.error && <ErrorBanner text={game.error} onDismiss={game.clearError} />}</Screen>; }
+function PhoneCharm({ className = "" }: { className?: string }) {
+  return (
+    <Image
+      className={`phone-charm ${className}`}
+      src="/candy/candy-phone.jpg"
+      width={1792}
+      height={2400}
+      sizes="25vw"
+      alt=""
+    />
+  );
+}
+
+function HeartGem({ tone = "pink" }: { tone?: "pink" | "purple" | "mint" }) {
+  return <span className={`heart-gem heart-${tone}`} aria-hidden="true">♥</span>;
+}
+
+function Tape({ children, className = "" }: PropsWithChildren<{ className?: string }>) {
+  return <div className={`paper-tape ${className}`}>{children}</div>;
+}
+
+function CandyButton({
+  children,
+  onClick,
+  tone = "pink",
+  disabled = false,
+  className = "",
+}: PropsWithChildren<{
+  onClick: () => void;
+  tone?: "pink" | "purple" | "cream" | "mint";
+  disabled?: boolean;
+  className?: string;
+}>) {
+  return (
+    <button className={`candy-button button-${tone} ${className}`} onClick={onClick} disabled={disabled}>
+      <HeartGem tone={tone === "purple" ? "purple" : tone === "mint" ? "mint" : "pink"} />
+      <span>{children}</span>
+      <i aria-hidden="true">✦</i>
+    </button>
+  );
+}
+
+function WalletControl() {
+  return (
+    <ConnectButton.Custom>
+      {({ account, chain, openAccountModal, openChainModal, openConnectModal, mounted }) => {
+        const connected = mounted && account && chain;
+        if (!connected) {
+          return <button className="wallet-pill" onClick={openConnectModal}><i />CONNECT WALLET</button>;
+        }
+        if (chain.unsupported) {
+          return <button className="wallet-pill alert" onClick={openChainModal}><i />SWITCH NETWORK</button>;
+        }
+        return (
+          <button className="wallet-pill connected" onClick={openAccountModal}>
+            <i />{account.displayName}<small>{chain.name}</small>
+          </button>
+        );
+      }}
+    </ConnectButton.Custom>
+  );
+}
+
+function HomeScreen({ start, how }: { start: () => void; how: () => void }) {
+  return (
+    <Screen className="home-screen">
+      <div className="top-wallet"><WalletControl /></div>
+      <BrandLogo />
+      <Tape className="home-tagline">Bestie… trust no one.♡</Tape>
+      <aside className="scrap-note home-note" aria-label="Game summary">
+        <b>Secret choice game. ♡</b>
+        <span>Press or</span>
+        <span>don’t press.</span>
+        <HeartGem />
+      </aside>
+      <div className="home-actions">
+        <CandyButton onClick={start}>START GAME</CandyButton>
+        <CandyButton tone="purple" onClick={how}>HOW TO PLAY</CandyButton>
+      </div>
+      <PhoneCharm className="home-phone" />
+    </Screen>
+  );
+}
+
+function HowToPlay({ back, continueToGame }: { back: () => void; continueToGame: () => void }) {
+  const rules = [
+    ["1", "If nobody presses", "The points grow for the next round."],
+    ["2", "If exactly one presses", "That player wins the points."],
+    ["3", "If two or more press", "Nobody wins and the game continues."],
+  ] as const;
+  return (
+    <Screen className="how-screen">
+      <BrandLogo compact />
+      <h1 className="screen-title">HOW TO PLAY</h1>
+      <div className="rule-grid">
+        {rules.map(([number, title, detail], index) => (
+          <article className="rule-note" key={number}>
+            <span className={`rule-number rule-${index + 1}`}>{number}</span>
+            <h2>{title}</h2>
+            <i aria-hidden="true">→</i>
+            <p>{detail}</p>
+            <HeartGem tone={index === 1 ? "purple" : "pink"} />
+          </article>
+        ))}
+      </div>
+      <Tape className="rules-whisper">Psst… choices stay encrypted until every player commits. ♡</Tape>
+      <div className="bottom-actions two-up">
+        <CandyButton tone="purple" onClick={back}>BACK</CandyButton>
+        <CandyButton onClick={continueToGame}>CONTINUE</CandyButton>
+      </div>
+    </Screen>
+  );
+}
+
+function Matchmaking({
+  game,
+  roomInput,
+  setRoomInput,
+  create,
+  join,
+  back,
+}: {
+  game: Game;
+  roomInput: string;
+  setRoomInput: (value: string) => void;
+  create: () => void;
+  join: () => void;
+  back: () => void;
+}) {
+  return (
+    <Screen className="matchmaking-screen">
+      <div className="top-wallet"><WalletControl /></div>
+      <BrandLogo compact />
+      <div className="match-grid">
+        <CandyPanel className="match-card create-card">
+          <h1>CREATE ROOM</h1>
+          <HeartGem />
+          <Tape>Private operation</Tape>
+          <output aria-label="Room size">2–4 PLAYERS</output>
+          <CreateRoomAction game={game} create={create} />
+        </CandyPanel>
+        <CandyPanel className="match-card join-card">
+          <h1>JOIN ROOM</h1>
+          <HeartGem tone="purple" />
+          <label htmlFor="room-reference">Enter room code:</label>
+          <input
+            id="room-reference"
+            value={roomInput}
+            onChange={(event) => setRoomInput(event.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""))}
+            placeholder="DPI-XXXXXX-XX"
+            autoCapitalize="characters"
+          />
+          <CandyButton tone="purple" onClick={join} disabled={!parseRoomReference(roomInput)}>JOIN</CandyButton>
+        </CandyPanel>
+      </div>
+      <aside className="scrap-note match-note"><b>2–4 players</b><span>Choices stay secret ♡</span></aside>
+      <button className="text-link back-link" onClick={back}>← BACK TO MENU</button>
+      <PhoneCharm className="match-phone" />
+      {game.error && <ErrorBanner text={game.error} onDismiss={game.clearError} />}
+    </Screen>
+  );
+}
 
 function CreateRoomAction({ game, create }: { game: Game; create: () => void }) {
-  return <ConnectButton.Custom>{({ account, chain, openChainModal, openConnectModal, mounted }) => {
-    const connected = mounted && account && chain;
-    if (!connected) return <PlateButton tone="amber" onClick={openConnectModal}>CONNECT WALLET</PlateButton>;
-    if (chain.unsupported) return <PlateButton tone="red" onClick={openChainModal}>SWITCH TO BASE SEPOLIA</PlateButton>;
-    return <PlateButton tone="amber" onClick={create} disabled={game.isWorking}>{game.isWorking ? "CREATING…" : "CREATE ROOM"}</PlateButton>;
-  }}</ConnectButton.Custom>;
+  return (
+    <ConnectButton.Custom>
+      {({ account, chain, openChainModal, openConnectModal, mounted }) => {
+        const connected = mounted && account && chain;
+        if (!connected) return <CandyButton onClick={openConnectModal}>CONNECT WALLET</CandyButton>;
+        if (chain.unsupported) return <CandyButton onClick={openChainModal}>SWITCH NETWORK</CandyButton>;
+        return (
+          <CandyButton onClick={create} disabled={game.isWorking}>
+            {game.isWorking ? "CREATING…" : "CREATE ROOM"}
+          </CandyButton>
+        );
+      }}
+    </ConnectButton.Custom>
+  );
 }
 
-function MobileGame({ activeScreen, game, roomId, roomInput, setRoomInput, start, back, create, join, leave, players, playerCount, maxPlayers, isHost, isPlayer, round, points, submittedCount, revealReady, deadlineReached, ended, winner }: { activeScreen: ScreenName; game: Game; roomId?: bigint; roomInput: string; setRoomInput: (value: string) => void; start: () => void; back: () => void; create: () => void; join: () => void; leave: () => void; players: readonly string[]; playerCount: number; maxPlayers: number; isHost: boolean; isPlayer: boolean; round: number; points: bigint; submittedCount: number; revealReady: boolean; deadlineReached: boolean; ended: boolean; winner: string }) {
-  const header = <header className="mobile-topbar"><BrandMark compact /><WalletControl /></header>;
-  const error = game.error && <ErrorBanner text={game.error} onDismiss={game.clearError} />;
-  if (activeScreen === "home") return <section className="mobile-app mobile-home">{header}<div className="mobile-hero"><small>CLASSIFIED MULTIPLAYER</small><BrandMark /><p>Secretly choose whether to press. Every order stays encrypted until the squad commits.</p><PlateButton onClick={start}>START OPERATION</PlateButton><span>BASE SEPOLIA · 2–4 PLAYERS · POINTS ONLY</span></div>{error}</section>;
-  if (activeScreen === "matchmaking") return <section className="mobile-app">{header}<div className="mobile-page-title"><button onClick={back}>← BACK</button><h1>ROOM ACCESS</h1></div><div className="mobile-stack"><MobileCreateAction game={game} create={create} /><Panel className="mobile-card"><h2>JOIN OPERATION</h2><label htmlFor="mobile-room-code">INVITE CODE</label><input id="mobile-room-code" value={roomInput} onChange={(event) => setRoomInput(event.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""))} placeholder="DPI-XXXXXX-XX" autoCapitalize="characters" /><PlateButton tone="bone" onClick={join} disabled={!parseRoomReference(roomInput)}>JOIN ROOM</PlateButton></Panel></div>{error}</section>;
-  if (activeScreen === "lobby" && roomId !== undefined) return <section className="mobile-app">{header}<div className="mobile-page-title"><button onClick={leave}>← EXIT</button><h1>READY ROOM</h1></div><div className="mobile-room-code"><span>INVITE CODE</span><strong>{roomCode(roomId)}</strong><button onClick={() => void navigator.clipboard.writeText(roomLink(window.location.origin, roomId))}>COPY INVITE</button></div><Panel className="mobile-card"><h2>{playerCount}/{maxPlayers} PLAYERS</h2><div className="mobile-roster">{players.map((player, index) => <div key={player}><span>{String(index + 1).padStart(2, "0")}</span><strong>{player.toLowerCase() === game.address?.toLowerCase() ? "YOU" : shorten(player)}</strong><i>READY</i></div>)}</div></Panel><div className="mobile-actions">{!isPlayer && <PlateButton tone="bone" onClick={() => void game.joinRoom()} disabled={!game.address || game.isWorking || playerCount >= maxPlayers}>{game.isWorking ? "JOINING…" : "JOIN ROOM"}</PlateButton>}{isHost && <PlateButton tone="amber" onClick={() => void game.startGame()} disabled={game.isWorking || playerCount < 2}>{game.isWorking ? "STARTING…" : playerCount < 2 ? "NEED 2 PLAYERS" : "START ROUND"}</PlateButton>}<PlateButton tone="dark" onClick={leave}>BACK TO MENU</PlateButton></div>{error}</section>;
-  if (activeScreen === "result") return <section className="mobile-app">{header}<div className="mobile-page-title"><small>ROUND {round} COMPLETE</small><h1>RESULTS</h1></div><Panel className="mobile-result-card" tone="amber"><strong>{ended ? game.address?.toLowerCase() === winner.toLowerCase() ? "YOU PRESSED IT" : `${shorten(winner)} PRESSED IT` : "NO WINNER"}</strong><span>{ended ? "OPERATION COMPLETE" : "POINTS CARRY FORWARD"}</span><b>{points.toString()} POINTS</b></Panel><div className="mobile-actions">{!ended && <PlateButton onClick={() => void game.nextRound()} disabled={game.isWorking}>{game.isWorking ? "STARTING…" : "NEXT ROUND"}</PlateButton>}<PlateButton tone="dark" onClick={leave}>BACK TO MENU</PlateButton></div>{error}</section>;
-  const lockedTitle = revealReady ? "ORDERS REVEALED" : deadlineReached ? "ROUND EXPIRED" : "CHOICE LOCKED";
-  const lockedDetail = revealReady ? "The encrypted outcome is ready for verification." : deadlineReached ? "A player did not submit before the timer ended." : `${submittedCount}/${playerCount} orders are locked. Waiting for the squad.`;
-  const action = revealReady ? () => void game.finalizeRound() : deadlineReached ? () => void game.expireRound() : undefined;
-  return <section className="mobile-app">{header}<div className="mobile-page-title"><small>ROUND {round} · {points.toString()} POINTS</small><h1>{lockedTitle}</h1></div>{!action && !game.hasSubmitted && <div className="mobile-choice-actions"><ChoiceButton choice="hold" onClick={() => void game.submitChoice(false)} disabled={game.isWorking} /><ChoiceButton choice="press" onClick={() => void game.submitChoice(true)} disabled={game.isWorking} /></div>}{(action || game.hasSubmitted) && <Panel className="mobile-card mobile-locked-card"><p>{lockedDetail}</p>{action && <PlateButton onClick={action} disabled={game.isWorking}>{game.isWorking ? "WORKING…" : revealReady ? "VERIFY & FINALIZE" : "EXPIRE ROUND"}</PlateButton>}</Panel>}<button className="mobile-leave" onClick={leave}>LEAVE OPERATION</button>{error}</section>;
+function Lobby({
+  game,
+  roomId,
+  players,
+  playerCount,
+  maxPlayers,
+  isHost,
+  isPlayer,
+  leave,
+}: {
+  game: Game;
+  roomId: bigint;
+  players: readonly string[];
+  playerCount: number;
+  maxPlayers: number;
+  isHost: boolean;
+  isPlayer: boolean;
+  leave: () => void;
+}) {
+  const code = roomCode(roomId);
+  const copyInvite = () => void navigator.clipboard.writeText(roomLink(window.location.origin, roomId));
+  return (
+    <Screen className="lobby-screen">
+      <div className="top-wallet"><WalletControl /></div>
+      <BrandLogo compact />
+      <CandyPanel className="roster-card">
+        <h1>BESTIES ASSEMBLED</h1>
+        <div className="roster-list">
+          {players.map((player, index) => (
+            <PlayerRow
+              key={player}
+              index={index}
+              address={player}
+              you={player.toLowerCase() === game.address?.toLowerCase()}
+              status="READY"
+            />
+          ))}
+          {Array.from({ length: maxPlayers - playerCount }).map((_, index) => (
+            <PlayerRow key={`open-${index}`} index={playerCount + index} address="OPEN SLOT" status="WAITING" />
+          ))}
+        </div>
+      </CandyPanel>
+      <CandyPanel className="lobby-main-card">
+        <output className="player-total" aria-label={`${playerCount} of ${maxPlayers} players`}>
+          <HeartGem /> {playerCount}/{maxPlayers} <HeartGem tone="purple" />
+          <b>PLAYERS</b>
+        </output>
+        <Tape>{isHost ? "Your room is ready ♡" : "Waiting for the host ♡"}</Tape>
+        <button className="room-code-button" onClick={copyInvite} title="Copy invite link">
+          <small>INVITE CODE</small>
+          <output>{code}</output>
+          <span>COPY INVITE</span>
+        </button>
+        {!isPlayer && (
+          <CandyButton tone="purple" onClick={() => void game.joinRoom()} disabled={!game.address || game.isWorking || playerCount >= maxPlayers}>
+            {game.isWorking ? "JOINING…" : "JOIN ROOM"}
+          </CandyButton>
+        )}
+        {isHost && (
+          <CandyButton onClick={() => void game.startGame()} disabled={game.isWorking || playerCount < 2}>
+            {game.isWorking ? "STARTING…" : playerCount < 2 ? "NEED 2 PLAYERS" : "START ROUND"}
+          </CandyButton>
+        )}
+        <CandyButton tone="purple" onClick={leave}>LEAVE</CandyButton>
+      </CandyPanel>
+      <PhoneCharm className="lobby-phone" />
+      <small className="network-label">{activeChain.name} · ENCRYPTED CHOICES</small>
+      {game.error && <ErrorBanner text={game.error} onDismiss={game.clearError} />}
+    </Screen>
+  );
 }
 
-function MobileCreateAction({ game, create }: { game: Game; create: () => void }) {
-  return <Panel className="mobile-card" tone="olive"><h2>CREATE OPERATION</h2><p>Start a private room for 2–4 players.</p><ConnectButton.Custom>{({ account, chain, openChainModal, openConnectModal, mounted }) => { const connected = mounted && account && chain; if (!connected) return <PlateButton tone="amber" onClick={openConnectModal}>CONNECT WALLET</PlateButton>; if (chain.unsupported) return <PlateButton tone="red" onClick={openChainModal}>SWITCH TO BASE SEPOLIA</PlateButton>; return <PlateButton tone="amber" onClick={create} disabled={game.isWorking}>{game.isWorking ? "CREATING…" : "CREATE ROOM"}</PlateButton>; }}</ConnectButton.Custom></Panel>;
+function PlayerRow({ index, address, status, you = false }: { index: number; address: string; status: string; you?: boolean }) {
+  return (
+    <div className="player-row">
+      <span className="avatar-heart">{you ? "♡" : "♥"}</span>
+      <strong>{you ? "YOU" : address.startsWith("0x") ? shorten(address) : address}</strong>
+      <HeartGem tone={index % 2 ? "purple" : "pink"} />
+      <output>{status}</output>
+    </div>
+  );
 }
 
-function Lobby({ game, roomId, players, playerCount, maxPlayers, isHost, isPlayer, leave }: { game: Game; roomId: bigint; players: readonly string[]; playerCount: number; maxPlayers: number; isHost: boolean; isPlayer: boolean; leave: () => void }) { const inviteCode = roomCode(roomId); const copyInvite = () => void navigator.clipboard.writeText(roomLink(window.location.origin, roomId)); return <Screen className="lobby-screen"><header className="lobby-topbar"><BrandMark compact /><div className="operation-meta"><span>OPERATION: <button className="invite-code" onClick={copyInvite} title="Copy invite link">{inviteCode}</button></span><i>//</i><span>LOCATION: <b>BASE SEPOLIA</b></span><i>//</i><span>CHOICES: ENCRYPTED</span></div><WalletControl /></header><section className="lobby-left"><header><small>TACTICAL OPERATIONS</small><h1>LOBBY / READY ROOM</h1><WingStar /></header><Panel className="roster-panel"><Rivets />{players.map((player, index) => <RosterRow key={player} index={index} address={player} you={player.toLowerCase() === game.address?.toLowerCase()} status="READY" />)}{Array.from({ length: maxPlayers - playerCount }).map((_, index) => <RosterRow key={index} index={playerCount + index} address="OPEN SLOT" status="WAITING" />)}</Panel><div className="radio-feed compact"><strong>RADIO FEED</strong><p><span>[INVITE]</span> <button className="invite-code" onClick={copyInvite} title="Copy invite link">{inviteCode}</button></p><p><span>[INCO]</span> Choices will remain private.</p></div></section><Panel className="lobby-round-panel"><Rivets /><h2><em>{playerCount}/{maxPlayers}</em> PLAYERS</h2><WingStar /><small>{isHost ? "SQUAD LEADER ONLINE" : "WAITING FOR SQUAD LEADER"}</small><strong className="countdown">{inviteCode}</strong><button className="invite-code copy-invite" onClick={copyInvite}>COPY INVITE</button>{!isPlayer && <PlateButton tone="bone" onClick={() => void game.joinRoom()} disabled={!game.address || game.isWorking || playerCount >= maxPlayers}>{game.isWorking ? "JOINING…" : "JOIN ROOM"}</PlateButton>}{isHost && <PlateButton tone="amber" onClick={() => void game.startGame()} disabled={game.isWorking || playerCount < 2}>{game.isWorking ? "STARTING…" : playerCount < 2 ? "NEED 2 PLAYERS" : "START ROUND"}</PlateButton>}<PlateButton tone="dark" onClick={leave}>LEAVE</PlateButton></Panel><footer className="lobby-footer"><span>// STAY FOCUSED<br />// TRUST NO ONE</span><WingStar /><Panel>DISCIPLINE&nbsp;&nbsp; ◆ &nbsp;&nbsp;FOCUS&nbsp;&nbsp; ◆ &nbsp;&nbsp;VICTORY</Panel><span className="footer-warning"><WarningIcon /> POINTS ONLY<br />NO REAL-MONEY PRIZES</span></footer>{game.error && <ErrorBanner text={game.error} onDismiss={game.clearError} />}</Screen>; }
+function StatsBar({ round, points, secondsLeft }: { round: number; points: bigint; secondsLeft: number | null }) {
+  return (
+    <header className="stats-bar" aria-label="Round status">
+      <span>ROUND <output>{round}</output></span>
+      <span>♡</span>
+      <span>TIME <time dateTime={secondsLeft === null ? undefined : `PT${secondsLeft}S`}>{secondsLeft === null ? "…" : `${Math.floor(secondsLeft / 60).toString().padStart(2, "0")}:${(secondsLeft % 60).toString().padStart(2, "0")}`}</time></span>
+      <span>♡</span>
+      <span>POINTS <output>{points.toString()}</output></span>
+    </header>
+  );
+}
 
-function RosterRow({ index, address, status, you = false }: { index: number; address: string; status: string; you?: boolean }) { return <div className="lobby-player"><span className="player-number">{String(index + 1).padStart(2, "0")}</span><span className="mini-chevron">▶</span><strong>{you ? "YOU" : address.startsWith("0x") ? shorten(address) : address}</strong><span className={`status-chip ${status === "READY" ? "ready" : "connected"}`}>{status}</span><i className={`status-led ${status === "READY" ? "green" : "amber"}`} /></div>; }
+function Choice({
+  game,
+  players,
+  playerCount,
+  round,
+  points,
+  submittedCount,
+  revealReady,
+  deadlineReached,
+  secondsLeft,
+  leave,
+}: {
+  game: Game;
+  players: readonly string[];
+  playerCount: number;
+  maxPlayers: number;
+  round: number;
+  points: bigint;
+  submittedCount: number;
+  revealReady: boolean;
+  deadlineReached: boolean;
+  secondsLeft: number | null;
+  leave: () => void;
+}) {
+  if (revealReady) {
+    return (
+      <Locked
+        game={game}
+        players={players}
+        playerCount={playerCount}
+        submittedCount={submittedCount}
+        round={round}
+        points={points}
+        secondsLeft={secondsLeft}
+        title="ORDERS REVEALED"
+        detail="The encrypted outcome is ready for Inco attestation."
+        action="VERIFY & FINALIZE"
+        onAction={() => void game.finalizeRound()}
+        leave={leave}
+      />
+    );
+  }
+  if (deadlineReached) {
+    return (
+      <Locked
+        game={game}
+        players={players}
+        playerCount={playerCount}
+        submittedCount={submittedCount}
+        round={round}
+        points={points}
+        secondsLeft={secondsLeft}
+        title="ROUND EXPIRED"
+        detail="A player did not submit. Existing choices remain private."
+        action="EXPIRE ROUND SAFELY"
+        onAction={() => void game.expireRound()}
+        leave={leave}
+      />
+    );
+  }
+  if (game.hasSubmitted) {
+    return (
+      <Locked
+        game={game}
+        players={players}
+        playerCount={playerCount}
+        submittedCount={submittedCount}
+        round={round}
+        points={points}
+        secondsLeft={secondsLeft}
+        title="CHOICE LOCKED IN"
+        detail="No take-backs. Your encrypted choice is sealed."
+        leave={leave}
+      />
+    );
+  }
+  return (
+    <Screen className="choice-screen">
+      <BrandLogo compact />
+      <StatsBar round={round} points={points} secondsLeft={secondsLeft} />
+      <Tape className="choice-prompt">♡ What will you do? ♡</Tape>
+      <CandyPanel className="choice-roster">
+        <h2>SQUAD</h2>
+        {players.map((player, index) => (
+          <PlayerRow
+            key={player}
+            index={index}
+            address={player}
+            you={player.toLowerCase() === game.address?.toLowerCase()}
+            status={player.toLowerCase() === game.address?.toLowerCase() ? "CHOOSING" : "PRIVATE"}
+          />
+        ))}
+      </CandyPanel>
+      <div className="choice-actions" aria-label="Choose your encrypted order">
+        <ChoiceButton choice="hold" onClick={() => void game.submitChoice(false)} disabled={game.isWorking} />
+        <ChoiceButton choice="press" onClick={() => void game.submitChoice(true)} disabled={game.isWorking} />
+      </div>
+      <CandyPanel className="secure-note">
+        <h2>♡ SECURE LINK ♡</h2>
+        <p>Your choice is encrypted for the game contract.</p>
+        <p>Other players cannot react to your order.</p>
+        <output>{submittedCount}/{playerCount} SEALED</output>
+        <WalletControl />
+      </CandyPanel>
+      <button className="text-link leave-link" onClick={leave}>LEAVE OPERATION</button>
+      {game.error && <ErrorBanner text={game.error} onDismiss={game.clearError} />}
+    </Screen>
+  );
+}
 
-function Metric({ label, value, tone = "olive" }: { label: string; value: string; tone?: Tone }) { return <div className={`metric metric-${tone}`}><span>{label}</span><strong>{value}</strong></div>; }
-function Choice({ game, players, playerCount, round, points, submittedCount, revealReady, deadlineReached, secondsLeft, leave }: { game: Game; players: readonly string[]; playerCount: number; round: number; points: bigint; submittedCount: number; revealReady: boolean; deadlineReached: boolean; secondsLeft: number | null; leave: () => void }) { if (revealReady) return <Locked game={game} title="ALL ORDERS REVEALED" detail="Inco has made the encrypted outcome available for verification." action="VERIFY & FINALIZE" onAction={() => void game.finalizeRound()} leave={leave} />; if (deadlineReached) return <Locked game={game} title="ROUND EXPIRED" detail="A player did not submit. Submitted choices remain private." action="EXPIRE ROUND SAFELY" onAction={() => void game.expireRound()} leave={leave} />; if (game.hasSubmitted) return <Locked game={game} title="CHOICE LOCKED IN" detail={`${submittedCount}/${playerCount} encrypted orders sealed. Awaiting the squad.`} leave={leave} />; return <Screen className="choice-screen"><header className="metrics-bar"><Metric label="ROUND" value={`${round}`} /><Metric label="TIMER" value={secondsLeft === null ? "…" : `00:${secondsLeft.toString().padStart(2, "0")}`} tone="amber" /><Metric label="MISSION POINTS" value={points.toString()} /></header><Panel className="squad-panel"><header><WingStar /> SQUAD STATUS <span>— ★★★</span></header>{players.map((player) => <div className="squad-player" key={player}><div><strong>{player.toLowerCase() === game.address?.toLowerCase() ? "YOU" : shorten(player)}</strong><span><i className="status-led amber" />{player.toLowerCase() === game.address?.toLowerCase() ? "CHOOSING" : "ACTIVE"}</span></div><div className="player-dots"><i /><i className="active" /><i /></div></div>)}<footer>UNIT 7&nbsp; · &nbsp;STAY SHARP&nbsp; · &nbsp;TRUST THE PLAN<WingStar /></footer></Panel><section className="choice-arena"><ChoiceButton choice="hold" onClick={() => void game.submitChoice(false)} disabled={game.isWorking} /><ChoiceButton choice="press" onClick={() => void game.submitChoice(true)} disabled={game.isWorking} /></section><Panel className="comms-panel"><header>⌁ COMMS</header><div className="comms-lines"><div><strong>COMMAND</strong><time>LIVE</time><p>Choose carefully. Nobody can see your encrypted order.</p></div><div><strong>INCO</strong><time>LIVE</time><p>Private state secured in the TEE.</p></div></div></Panel><div className="tactical-desk"><span>MISSION FOCUS. SQUAD TRUST. VICTORY.</span><button className="leave-choice" onClick={leave}>LEAVE OPERATION</button></div>{game.error && <ErrorBanner text={game.error} onDismiss={game.clearError} />}</Screen>; }
-function ChoiceButton({ choice, onClick, disabled }: { choice: "hold" | "press"; onClick: () => void; disabled: boolean }) { const hold = choice === "hold"; return <button className={`choice-button ${hold ? "hold-choice" : "press-choice"}`} onClick={onClick} disabled={disabled}><Rivets /><span className="choice-icon">{hold ? <ShieldIcon /> : <WarningIcon />}</span><span className="choice-copy"><strong>{hold ? "DON’T PRESS" : "PRESS IT"}</strong><small>{hold ? "★ HOLD POSITION. STAY DISCIPLINED. PROTECT THE MISSION. ★" : "☠ TAKE THE RISK. STRIKE HARD. CLAIM THE REWARD. ☠"}</small></span></button>; }
-function Locked({ game, title, detail, action, onAction, leave }: { game: Game; title: string; detail: string; action?: string; onAction?: () => void; leave: () => void }) { return <Screen className="locked-screen"><header className="locked-header"><Panel className="brand-strip"><BrandMark compact /><WingStar /></Panel><h1>{title}</h1><WingStar /></header><aside className="locked-metrics"><Panel><Metric label="MISSION STATUS" value="SEALED" /></Panel><Panel><Metric label="SYSTEM" value="INCO TEE" tone="amber" /></Panel></aside><Panel className="locked-table"><Rivets /><div className="table-heading"><span>PLAYER</span><span>STATUS</span></div><div className="locked-row"><strong>YOU</strong><span className="is-locked">{title === "CHOICE LOCKED IN" ? "LOCKED IN" : "READY"}</span><i>▣</i></div><p className="locked-detail">{detail}</p>{action && onAction && <PlateButton onClick={onAction} disabled={game.isWorking}>{game.isWorking ? "WORKING…" : action}</PlateButton>}</Panel><Panel className="hand-radio" tone="olive"><Rivets /><h3>TRC-152</h3><div className="crt-screen"><small>COMMS CHANNEL 7</small><p>Decision logged.<br />Stand by.</p></div></Panel><footer className="locked-footer">UNIT 7-A <span>★ STAY SHARP. STAY ALIVE. ★</span><button className="leave-choice" onClick={leave}>LEAVE</button></footer>{game.error && <ErrorBanner text={game.error} onDismiss={game.clearError} />}</Screen>; }
-function Results({ game, ended, winner, points, leave }: { game: Game; ended: boolean; winner: string; points: bigint; leave: () => void }) { const youWon = game.address?.toLowerCase() === winner.toLowerCase(); return <Screen className="results-screen"><header className="results-header"><Panel className="round-stamp"><small>// OPERATION:<br />DON’T PRESS IT</small><strong>RESULT:<br />VERIFIED</strong></Panel><h1>ROUND RESULTS</h1><WingStar /><Panel className="result-warning"><WarningIcon /><span><b>INCO</b>PRIVATE ORDERS<br />REVEALED TOGETHER</span></Panel></header><Panel className="winner-pot" tone="amber"><span>★★ &nbsp; {ended ? youWon ? "YOU PRESSED IT" : `${shorten(winner)} PRESSED IT` : "NO WINNER — ROUND CONTINUES"} &nbsp; ★★</span><strong>{points.toString()} POINTS</strong></Panel><div className="result-action">{!ended && <PlateButton onClick={() => void game.nextRound()} disabled={game.isWorking}>{game.isWorking ? "STARTING…" : "NEXT ROUND"}</PlateButton>}<PlateButton tone="dark" onClick={leave}>BACK TO MENU</PlateButton></div></Screen>; }
-function ErrorBanner({ text, onDismiss }: { text: string; onDismiss: () => void }) { return <div className="ui-error" role="alert"><span>{text}</span><button onClick={onDismiss} aria-label="Dismiss message">×</button></div>; }
+function ChoiceButton({ choice, onClick, disabled }: { choice: "hold" | "press"; onClick: () => void; disabled: boolean }) {
+  const hold = choice === "hold";
+  return (
+    <button className={`choice-button ${hold ? "choice-hold" : "choice-press"}`} onClick={onClick} disabled={disabled}>
+      <Image
+        src={hold ? "/candy/choice-angel.jpg" : "/candy/choice-devil.jpg"}
+        width={2048}
+        height={2048}
+        sizes="30vw"
+        alt=""
+      />
+      <span>{hold ? "DON’T\nPRESS" : "PRESS\nIT"}</span>
+      <small>{hold ? "Play it safe. Keep the points growing." : "Risk it all. Press for glory."}</small>
+    </button>
+  );
+}
+
+function Locked({
+  game,
+  players,
+  playerCount,
+  submittedCount,
+  round,
+  points,
+  secondsLeft,
+  title,
+  detail,
+  action,
+  onAction,
+  leave,
+}: {
+  game: Game;
+  players: readonly string[];
+  playerCount: number;
+  submittedCount: number;
+  round: number;
+  points: bigint;
+  secondsLeft: number | null;
+  title: string;
+  detail: string;
+  action?: string;
+  onAction?: () => void;
+  leave: () => void;
+}) {
+  return (
+    <Screen className="locked-screen">
+      <BrandLogo compact />
+      <StatsBar round={round} points={points} secondsLeft={secondsLeft} />
+      <aside className="scrap-note locked-note"><b>No take-backs!</b><span>{detail}</span><HeartGem /></aside>
+      <CandyPanel className="locked-card" aria-live="polite">
+        <HeartGem />
+        <h1>{title}</h1>
+        <p>{detail}</p>
+        <output className="sealed-total">{submittedCount}/{playerCount} CHOICES SEALED</output>
+        <div className="locked-roster">
+          {players.map((player, index) => (
+            <div key={player}>
+              <span>{index + 1}</span>
+              <strong>{player.toLowerCase() === game.address?.toLowerCase() ? "YOU" : shorten(player)}</strong>
+              <HeartGem tone={index % 2 ? "purple" : "pink"} />
+              <output>{player.toLowerCase() === game.address?.toLowerCase() && game.hasSubmitted ? "LOCKED" : "PRIVATE"}</output>
+            </div>
+          ))}
+        </div>
+        {action && onAction && (
+          <CandyButton onClick={onAction} disabled={game.isWorking}>
+            {game.isWorking ? "WORKING…" : action}
+          </CandyButton>
+        )}
+      </CandyPanel>
+      <PhoneCharm className="locked-phone" />
+      <button className="text-link leave-link" onClick={leave}>LEAVE OPERATION</button>
+      {game.error && <ErrorBanner text={game.error} onDismiss={game.clearError} />}
+    </Screen>
+  );
+}
+
+function Results({
+  game,
+  players,
+  ended,
+  winner,
+  points,
+  round,
+  leave,
+  playAgain,
+}: {
+  game: Game;
+  players: readonly string[];
+  ended: boolean;
+  winner: string;
+  points: bigint;
+  round: number;
+  leave: () => void;
+  playAgain: () => void;
+}) {
+  const youWon = game.address?.toLowerCase() === winner.toLowerCase();
+  const winnerLabel = youWon ? "YOU WIN!" : `${shorten(winner)} WINS!`;
+  return (
+    <Screen className={`results-screen ${ended ? "game-over" : "round-result"}`}>
+      <BrandLogo compact />
+      <h1 className="result-title">{ended ? winnerLabel : `ROUND ${round} RESULTS`}</h1>
+      <Tape>{ended ? "Bestie trust: unlocked! ♡" : "The round is verified ♡"}</Tape>
+      <div className="result-player-grid">
+        {players.map((player, index) => (
+          <CandyPanel className={`result-player ${player.toLowerCase() === winner.toLowerCase() ? "winner" : ""}`} key={player}>
+            <span>{index + 1}</span>
+            <strong>{player.toLowerCase() === game.address?.toLowerCase() ? "YOU" : shorten(player)}</strong>
+            <HeartGem tone={index % 2 ? "purple" : "pink"} />
+            <small>{ended && player.toLowerCase() === winner.toLowerCase() ? "WINNER" : "ORDER PRIVATE"}</small>
+          </CandyPanel>
+        ))}
+      </div>
+      <CandyPanel className="result-pot" aria-live="polite">
+        <span>{ended ? "FINAL POINTS" : "POINTS CARRY FORWARD"}</span>
+        <output>{points.toString()}</output>
+        <small>IN-GAME POINTS</small>
+      </CandyPanel>
+      <div className="result-actions">
+        {!ended && (
+          <CandyButton onClick={() => void game.nextRound()} disabled={game.isWorking}>
+            {game.isWorking ? "STARTING…" : "NEXT ROUND"}
+          </CandyButton>
+        )}
+        {ended && <CandyButton onClick={playAgain}>PLAY AGAIN</CandyButton>}
+        <CandyButton tone="purple" onClick={leave}>BACK TO MENU</CandyButton>
+      </div>
+      <PhoneCharm className="result-phone" />
+      {game.error && <ErrorBanner text={game.error} onDismiss={game.clearError} />}
+    </Screen>
+  );
+}
+
+function ErrorBanner({ text, onDismiss }: { text: string; onDismiss: () => void }) {
+  return (
+    <div className="candy-error" role="alert">
+      <HeartGem />
+      <span>{text}</span>
+      <button onClick={onDismiss} aria-label="Dismiss message">×</button>
+    </div>
+  );
+}
