@@ -2,26 +2,25 @@
   "name": "dont-press-it",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@11.13.0",
   "workspaces": [
     "contracts",
     "frontend"
   ],
   "scripts": {
-    "dev": "pnpm --filter frontend dev",
-    "build": "pnpm --filter frontend build",
-    "lint": "pnpm --filter frontend lint",
-    "typecheck": "pnpm --filter frontend typecheck",
-    "test": "pnpm contracts:test:game && pnpm --filter frontend test",
-    "check": "pnpm contracts:compile && pnpm contracts:test:game && pnpm lint && pnpm typecheck && pnpm --filter frontend test && pnpm build",
-    "contracts:compile": "pnpm --filter contracts compile",
-    "contracts:test": "pnpm --filter contracts test",
-    "contracts:test:game": "pnpm --filter contracts test:game",
-    "contracts:coverage": "pnpm --filter contracts test:coverage",
-    "contracts:deploy:game:local": "pnpm --filter contracts deploy:game:local",
-    "contracts:deploy:game:testnet": "pnpm --filter contracts deploy:game:testnet",
-    "contracts:deploy:game:mainnet": "pnpm --filter contracts deploy:game:mainnet",
-    "contracts:node": "pnpm --filter contracts node"
+    "dev": "npm run dev --workspace=frontend",
+    "build": "npm run build --workspace=frontend",
+    "lint": "npm run lint --workspace=frontend",
+    "typecheck": "npm run typecheck --workspace=frontend",
+    "test": "npm run contracts:test:game && npm run test --workspace=frontend",
+    "check": "npm run contracts:compile && npm run contracts:test:game && npm run lint && npm run typecheck && npm run test --workspace=frontend && npm run build",
+    "contracts:compile": "npm run compile --workspace=contracts",
+    "contracts:test": "npm run test --workspace=contracts",
+    "contracts:test:game": "npm run test:game --workspace=contracts",
+    "contracts:coverage": "npm run test:coverage --workspace=contracts",
+    "contracts:deploy:game:local": "npm run deploy:game:local --workspace=contracts",
+    "contracts:deploy:game:testnet": "npm run deploy:game:testnet --workspace=contracts",
+    "contracts:deploy:game:mainnet": "npm run deploy:game:mainnet --workspace=contracts",
+    "contracts:node": "npm run node --workspace=contracts"
   },
   "engines": {
     "node": ">=20"
